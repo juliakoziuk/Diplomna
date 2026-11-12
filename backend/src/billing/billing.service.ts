@@ -14,6 +14,7 @@ import { AnchorRecord } from 'src/anchor-api/anchor.models';
 import { PLANS, PlanId } from './plans';
 import { ProcessedWebhookEvent, Subscription } from './subscription.model';
 import { PAYMENT_PROVIDER, PaymentProvider, SubscriptionSnapshot } from './payment-provider';
+import { msg } from 'src/common/lang';
 
 const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
 
@@ -45,10 +46,15 @@ export class BillingService {
     return this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
   }
 
+  /** False when no payment provider key is set (e.g. a deploy without payments). */
+  isEnabled(): boolean {
+    return this.provider.isConfigured();
+  }
+
   private requireProvider(): void {
     if (!this.provider.isConfigured()) {
       throw new ServiceUnavailableException(
-        'Оплату ще не налаштовано: додайте STRIPE_SECRET_KEY у backend/.env.local',
+        msg('Billing is not configured yet: add STRIPE_SECRET_KEY to backend/.env.local', 'Оплату ще не налаштовано: додайте STRIPE_SECRET_KEY у backend/.env.local'),
       );
     }
   }
@@ -111,14 +117,14 @@ export class BillingService {
     const row = await this.row(userId);
     if (row.providerSubscriptionId && LIVE_STATUSES.concat('incomplete').includes(row.status)) {
       if (row.plan === plan && !row.cancelAtPeriodEnd) {
-        throw new BadRequestException('Цей тариф уже активний');
+        throw new BadRequestException(msg('This plan is already active', 'Цей тариф уже активний'));
       }
       await this.apply(await this.provider.changePlan(row.providerSubscriptionId, plan));
       return { overview: await this.overview(userId) };
     }
     if (!row.providerCustomerId) {
       const user = await this.users.findByPk(userId);
-      if (!user) throw new NotFoundException('Користувача не знайдено');
+      if (!user) throw new NotFoundException(msg('User not found', 'Користувача не знайдено'));
       row.providerCustomerId = await this.provider.createCustomer(userId, user.email, user.fullname);
       row.provider = this.provider.name;
       await row.save();
@@ -140,7 +146,7 @@ export class BillingService {
     const snapshot = await this.provider.snapshotFromCheckout(sessionId);
     if (snapshot) {
       if (snapshot.customerId !== row.providerCustomerId) {
-        throw new BadRequestException('Ця оплата належить іншому акаунту');
+        throw new BadRequestException(msg('This payment belongs to another account', 'Ця оплата належить іншому акаунту'));
       }
       await this.apply(snapshot);
     }
@@ -150,7 +156,7 @@ export class BillingService {
   async setCancel(userId: number, cancel: boolean): Promise<BillingOverview> {
     this.requireProvider();
     const row = await this.row(userId);
-    if (!row.providerSubscriptionId) throw new BadRequestException('Немає платної підписки');
+    if (!row.providerSubscriptionId) throw new BadRequestException(msg('There is no paid subscription', 'Немає платної підписки'));
     await this.apply(await this.provider.setCancelAtPeriodEnd(row.providerSubscriptionId, cancel));
     return this.overview(userId);
   }
@@ -158,7 +164,7 @@ export class BillingService {
   async portal(userId: number): Promise<{ url: string }> {
     this.requireProvider();
     const row = await this.row(userId);
-    if (!row.providerCustomerId) throw new BadRequestException('Спершу оформіть платний тариф');
+    if (!row.providerCustomerId) throw new BadRequestException(msg('Subscribe to a paid plan first', 'Спершу оформіть платний тариф'));
     return { url: await this.provider.createPortal(row.providerCustomerId, `${this.frontendUrl}/account`) };
   }
 

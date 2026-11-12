@@ -72,6 +72,16 @@ export class BillingController {
     return Object.values(PLANS).map(({ priceEnv, ...plan }) => plan);
   }
 
+  @Get('status')
+  @ApiOperation({
+    summary: 'Is paid billing available?',
+    description: 'Public. `false` when no payment provider is configured: only the Free plan can be used.',
+  })
+  @ApiOkResponse({ schema: { type: 'object', properties: { billingEnabled: { type: 'boolean' } } } })
+  status() {
+    return { billingEnabled: this.billing.isEnabled() };
+  }
+
   @UseGuards(CookieAuthGuard)
   @ApiCookieAuth('session')
   @ApiUnauthorizedResponse(NEEDS_SESSION)

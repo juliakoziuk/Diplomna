@@ -13,9 +13,10 @@ import { AnchorApiModule } from './anchor-api/anchor-api.module';
 
 @Module({
   imports: [
+    // Serves the built frontend. No `serveRoot`: with '/' the library builds the
+    // SPA fallback path as '//*', so deep links like /pricing would 404 on refresh.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
     }),
     ConfigModule.forRoot({
       isGlobal: true,

@@ -1,4 +1,5 @@
 import { api, post } from "./http"
+import { localeOf } from "../i18n"
 
 export type PlanId = "free" | "pro" | "business" | "search"
 
@@ -68,6 +69,7 @@ export interface ApiKeyItem {
 
 export const billingApi = {
   plans: () => api<Plan[]>("/billing/plans"),
+  status: () => api<{ billingEnabled: boolean }>("/billing/status"),
   overview: (refresh = false) => api<BillingOverview>(`/billing/subscription${refresh ? "?refresh=1" : ""}`),
   checkout: (plan: PlanId) => post<{ url?: string; overview?: BillingOverview }>("/billing/checkout", { plan }),
   confirm: (sessionId: string) => post<BillingOverview>("/billing/checkout/confirm", { sessionId }),
@@ -89,7 +91,7 @@ export const accountApi = {
 }
 
 export const formatDate = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" }) : "—"
+  iso ? new Date(iso).toLocaleDateString(localeOf(), { day: "numeric", month: "long", year: "numeric" }) : "—"
 
 export const formatDateTime = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString("uk-UA", { dateStyle: "medium", timeStyle: "short" }) : "—"
+  iso ? new Date(iso).toLocaleString(localeOf(), { dateStyle: "medium", timeStyle: "short" }) : "—"

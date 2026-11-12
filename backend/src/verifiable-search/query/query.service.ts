@@ -7,6 +7,7 @@ import { getRangeProof, MerkleBuildResult } from '../merkle/merkle-tree';
 import { CentroidEntryDto, ProofBundle, RangeProofDto } from '../merkle/proof.types';
 import { DEMO_CORPUS, DemoDocument, embedText } from './demo-corpus';
 import { SimulatedAttack, VerifiableSearchDto } from './query.dto';
+import { msg } from 'src/common/lang';
 
 const NLIST = 6;
 /**
@@ -80,7 +81,7 @@ export class QueryService implements OnModuleInit {
   search(dto: VerifiableSearchDto): SearchResponse {
     const attack = dto.attack;
     if (attack && process.env.NODE_ENV === 'production') {
-      throw new BadRequestException('Симуляція атак доступна лише в тестовому середовищі');
+      throw new BadRequestException(msg('Attack simulation is available only in the test environment', 'Симуляція атак доступна лише в тестовому середовищі'));
     }
     const snap = attack === 'rollback' && this.previous ? this.previous : this.current;
     const q = embedText(dto.query);

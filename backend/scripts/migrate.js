@@ -8,7 +8,11 @@ const path = require('path');
 const { Client } = require('pg');
 
 async function main() {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    // Hosted Postgres reached over the public internet (Neon, Supabase...) needs TLS
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  });
   await client.connect();
   await client.query(
     'CREATE TABLE IF NOT EXISTS "_Migration" ("name" VARCHAR(255) PRIMARY KEY, "appliedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW())',

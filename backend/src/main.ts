@@ -2,17 +2,31 @@ import { config as loadEnv } from 'dotenv';
 // .env.local (git-ignored) holds payment keys and wins over the committed .env
 loadEnv({ path: ['.env.local', '.env'] });
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { langMiddleware } from './common/lang';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   // rawBody: Stripe webhook signatures are computed over the exact bytes sent
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+  // Behind a hosting proxy (Render, Railway, Fly...) TLS ends at the proxy
+  app.set('trust proxy', 1);
+  // In production the frontend is served by this same app, so CORS only matters for
+  // local dev (Vite on :5173). Extra origins can be added via CORS_ORIGINS (comma-separated).
+  const corsOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    ...(process.env.CORS_ORIGINS || '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+  ];
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: corsOrigins,
     credentials: true,
     // all headers that client are allowed to use
     allowedHeaders: [
@@ -24,6 +38,7 @@ async function bootstrap() {
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
   });
   app.use(cookieParser());
+  app.use(langMiddleware); // error messages follow Accept-Language
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -60,6 +75,6 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 3000, '0.0.0.0');
 }
 bootstrap();

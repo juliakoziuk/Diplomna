@@ -7,7 +7,8 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
+  // Not `GET /`: that path belongs to the frontend (served from public/)
+  @Get('health')
   @ApiOperation({ summary: 'Liveness check' })
   @ApiOkResponse({ description: 'Plain text.', schema: { type: 'string', example: 'Hello World!' } })
   getHello(): string {

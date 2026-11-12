@@ -1,11 +1,12 @@
 import React, { useEffect } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
-import { ActionIcon, Box, Button, Container, Group, MantineProvider, Text, Tooltip, createStyles, rem, useMantineColorScheme } from "@mantine/core"
+import { ActionIcon, Box, Button, Container, Group, MantineProvider, SegmentedControl, Text, Tooltip, createStyles, rem, useMantineColorScheme } from "@mantine/core"
 import { IconMoon, IconSun } from "@tabler/icons-react"
 import AuthOverlay from "../components/AuthOverlay"
 import { useUserStore } from "../stores/userStore"
 import { useGeneralStore } from "../stores/generalStore"
 import { authApi } from "../api/auth"
+import { Lang, useI18n } from "../i18n"
 import "./account-shell.css"
 
 const useStyles = createStyles((theme) => ({
@@ -71,6 +72,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
   const user = useUserStore((s) => s)
   const openAuth = useGeneralStore((s) => s.openAuth)
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
+  const { t, lang, setLang } = useI18n()
   const dark = colorScheme === "dark"
 
   const handleLogout = async () => {
@@ -92,26 +94,33 @@ export default function AccountShell({ children }: { children: React.ReactNode }
                 AnchorProof
               </NavLink>
               <Group spacing={2} noWrap sx={{ overflowX: "auto" }}>
-                <NavLink to="/product" className={classes.link}>Продукт</NavLink>
-                <NavLink to="/pricing" className={classes.link}>Тарифи</NavLink>
-                <NavLink to="/account" className={classes.link}>Кабінет</NavLink>
-                <NavLink to="/verify" className={classes.link}>Перевірити</NavLink>
-                <NavLink to="/technology" className={classes.link}>Для розробників</NavLink>
+                <NavLink to="/product" className={classes.link}>{t("Product", "Продукт")}</NavLink>
+                <NavLink to="/pricing" className={classes.link}>{t("Pricing", "Тарифи")}</NavLink>
+                <NavLink to="/account" className={classes.link}>{t("Account", "Кабінет")}</NavLink>
+                <NavLink to="/verify" className={classes.link}>{t("Verify", "Перевірити")}</NavLink>
+                <NavLink to="/technology" className={classes.link}>{t("For developers", "Для розробників")}</NavLink>
               </Group>
             </Group>
             <Group spacing="xs" noWrap>
-              <Tooltip label={dark ? "Світла тема" : "Темна тема"} withArrow>
-                <ActionIcon variant="default" size="md" onClick={() => toggleColorScheme()} aria-label={dark ? "Увімкнути світлу тему" : "Увімкнути темну тему"}>
+              <SegmentedControl
+                size="xs"
+                aria-label={t("Language", "Мова")}
+                value={lang}
+                onChange={(v) => setLang(v as Lang)}
+                data={[{ label: "EN", value: "en" }, { label: "УКР", value: "uk" }]}
+              />
+              <Tooltip label={dark ? t("Light theme", "Світла тема") : t("Dark theme", "Темна тема")} withArrow>
+                <ActionIcon variant="default" size="md" onClick={() => toggleColorScheme()} aria-label={dark ? t("Switch to light theme", "Увімкнути світлу тему") : t("Switch to dark theme", "Увімкнути темну тему")}>
                   {dark ? <IconSun size="1rem" /> : <IconMoon size="1rem" />}
                 </ActionIcon>
               </Tooltip>
               {user.id ? (
                 <>
                   <Text size="sm" c="dimmed" truncate maw={180}>{user.fullname}</Text>
-                  <Button variant="subtle" color="gray" size="xs" onClick={handleLogout}>Вийти</Button>
+                  <Button variant="subtle" color="gray" size="xs" onClick={handleLogout}>{t("Sign out", "Вийти")}</Button>
                 </>
               ) : (
-                <Button size="xs" onClick={() => openAuth("login")}>Увійти</Button>
+                <Button size="xs" onClick={() => openAuth("login")}>{t("Sign in", "Увійти")}</Button>
               )}
             </Group>
           </Group>

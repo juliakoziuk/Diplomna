@@ -71,3 +71,23 @@ export class AnchorRecord extends Model {
   @Column({ type: DataType.DATE, allowNull: true })
   anchoredAt: Date | null;
 }
+
+/**
+ * One anchored batch root per epoch: the persistent form of the (mock) registry,
+ * so receipts keep verifying after a restart and epoch numbers never repeat.
+ */
+@Table({ tableName: 'AnchorEpoch', timestamps: true })
+export class AnchorEpoch extends Model {
+  @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: false })
+  version: number;
+
+  @Column({ type: DataType.STRING(66), allowNull: false })
+  root: string;
+
+  @Column({ type: DataType.STRING(66), allowNull: false })
+  txHash: string;
+
+  /** Milliseconds since the Unix epoch. BIGINT comes back from pg as a string. */
+  @Column({ type: DataType.BIGINT, allowNull: false })
+  timestamp: string;
+}

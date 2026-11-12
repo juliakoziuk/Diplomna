@@ -34,6 +34,7 @@ import { Request } from 'express';
 import { CookieAuthGuard, CurrentUserId } from 'src/auth/cookie-auth.guard';
 import { ApiKey } from './anchor.models';
 import { AnchorApiService } from './anchor-api.service';
+import { msg } from 'src/common/lang';
 import {
   AnchorItemDto,
   AnchorRootDto,
@@ -49,7 +50,7 @@ class SubmitAnchorDto {
     example: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     pattern: '^[a-fA-F0-9]{64}$',
   })
-  @Matches(/^[a-fA-F0-9]{64}$/, { message: 'sha256 має бути 64 hex-символи' })
+  @Matches(/^[a-fA-F0-9]{64}$/, { message: () => msg('sha256 must be 64 hex characters', 'sha256 має бути 64 hex-символи') })
   sha256: string;
 
   @ApiPropertyOptional({ maxLength: 255, example: 'contract-v3.pdf', description: 'Free-form note for your own bookkeeping.' })
@@ -74,7 +75,7 @@ class ApiKeyGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const match = /^Bearer\s+(ap_[a-z]+_[a-f0-9]+)$/.exec(req.headers.authorization ?? '');
     const key = match && (await this.service.authenticateKey(match[1]));
-    if (!key) throw new UnauthorizedException('Недійсний або відкликаний API-ключ');
+    if (!key) throw new UnauthorizedException(msg('Invalid or revoked API key', 'Недійсний або відкликаний API-ключ'));
     req['apiKey'] = key;
     return true;
   }

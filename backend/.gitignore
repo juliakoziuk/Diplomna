@@ -38,3 +38,6 @@ lerna-debug.log*
 
 # Embedded Postgres data (npm run demo:db)
 .demo-pg/
+
+# Secrets: never commit (use .env.example as the template)
+.env

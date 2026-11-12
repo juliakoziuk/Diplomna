@@ -13,7 +13,8 @@ import { BillingService } from 'src/billing/billing.service';
 import { PLANS } from 'src/billing/plans';
 import { AnchoringService } from 'src/verifiable-search/anchoring/anchoring.service';
 import { buildMerkleTree, getInclusionProof, hashLeaf } from 'src/verifiable-search/merkle/merkle-tree';
-import { AnchorRecord, ApiKey } from './anchor.models';
+import { AnchorEpoch, AnchorRecord, ApiKey } from './anchor.models';
+import { msg } from 'src/common/lang';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
@@ -33,12 +34,20 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectModel(AnchorRecord) private readonly records: typeof AnchorRecord,
     @InjectModel(ApiKey) private readonly keys: typeof ApiKey,
+    @InjectModel(AnchorEpoch) private readonly epochs: typeof AnchorEpoch,
     private readonly billing: BillingService,
     private readonly anchoring: AnchoringService,
     private readonly config: ConfigService,
   ) {}
 
-  onModuleInit() {
+  async onModuleInit() {
+    // Reload the registry first: closing an epoch must continue the numbering, not restart it.
+    const saved = await this.epochs.findAll({ order: [['version', 'ASC']] });
+    this.anchoring.restore(
+      'documents',
+      saved.map((e) => ({ version: e.version, root: e.root, txHash: e.txHash, timestamp: Number(e.timestamp) })),
+    );
+    this.logger.log(`registry restored: ${saved.length} epoch(s)`);
     const every = Number(this.config.get('ANCHOR_EPOCH_MS')) || 60_000;
     this.timer = setInterval(() => void this.closeEpoch(), every);
   }
@@ -54,7 +63,10 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
     const limit = PLANS[plan].anchorsPerMonth;
     if (limit !== null && (await this.billing.anchorsThisMonth(userId)) >= limit) {
       throw new ForbiddenException(
-        `Ліміт тарифу ${PLANS[plan].name} (${limit} анкорів на місяць) вичерпано. Оновіть тариф у кабінеті.`,
+        msg(
+          `The ${PLANS[plan].name} plan limit (${limit} documents per month) is used up. Upgrade your plan in your account.`,
+          `Ліміт тарифу ${PLANS[plan].name} (${limit} документів на місяць) вичерпано. Оновіть тариф у кабінеті.`,
+        ),
       );
     }
     const record = await this.records.create({
@@ -79,7 +91,7 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
   async receipt(publicId: string, userId?: number) {
     const record = await this.records.findOne({ where: { publicId } });
     if (!record || (userId !== undefined && record.userId !== userId)) {
-      throw new NotFoundException('Квитанцію не знайдено');
+      throw new NotFoundException(msg('Receipt not found', 'Квитанцію не знайдено'));
     }
     return this.toDto(record);
   }
@@ -115,7 +127,7 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
   /** Public: the anchored root of a document epoch, for independent receipt checks. */
   epochRoot(epoch: number) {
     const anchor = this.anchoring.getRoot(epoch, 'documents');
-    if (!anchor) throw new NotFoundException('Епоху не знайдено');
+    if (!anchor) throw new NotFoundException(msg('Epoch not found', 'Епоху не знайдено'));
     return anchor;
   }
 
@@ -134,6 +146,10 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
       const anchor = this.anchoring.anchorRoot(tree.root, 'documents');
       const anchoredAt = new Date(anchor.timestamp);
       await this.records.sequelize.transaction(async (transaction) => {
+        await this.epochs.create(
+          { version: anchor.version, root: anchor.root, txHash: anchor.txHash, timestamp: String(anchor.timestamp) },
+          { transaction },
+        );
         for (let i = 0; i < pending.length; i++) {
           const { siblings } = getInclusionProof(tree.layers, i);
           await pending[i].update(
@@ -178,7 +194,7 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
 
   async revokeKey(userId: number, id: number) {
     const key = await this.keys.findOne({ where: { id, userId } });
-    if (!key) throw new NotFoundException('Ключ не знайдено');
+    if (!key) throw new NotFoundException(msg('Key not found', 'Ключ не знайдено'));
     if (!key.revokedAt) await key.update({ revokedAt: new Date() });
     return this.keyDto(key);
   }

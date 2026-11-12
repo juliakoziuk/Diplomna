@@ -21,8 +21,8 @@ export type AnchorStream = 'index' | 'documents';
  * it is actually deployed to Polygon Amoy (task "Hardhat-проект + деплой
  * MerkleAnchor.sol" is still open). Same read/write shape as the contract
  * (anchorRoot/getRoot/latestVersion), so a later `PolygonAnchoringService`
- * built on viem is a drop-in replacement. In-memory: anchors vanish when
- * the process restarts.
+ * built on viem is a drop-in replacement. The roots themselves are in memory;
+ * a stream that must survive restarts (documents) is reloaded with restore().
  */
 @Injectable()
 export class AnchoringService {
@@ -42,6 +42,15 @@ export class AnchoringService {
     };
     s.anchors.set(s.latest, anchor);
     return anchor;
+  }
+
+  /** Loads previously anchored roots (e.g. from the database) and continues numbering after them. */
+  restore(stream: AnchorStream, anchors: Anchor[]): void {
+    const s = this.streams[stream];
+    for (const a of anchors) {
+      s.anchors.set(a.version, a);
+      s.latest = Math.max(s.latest, a.version);
+    }
   }
 
   getRoot(version: number, stream: AnchorStream = 'index'): Anchor | undefined {

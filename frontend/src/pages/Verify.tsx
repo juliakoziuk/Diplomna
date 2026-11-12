@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Alert, Badge, Box, Button, Card, Code, Group, Loader, Stack, Text, Textarea, ThemeIcon, Title,
 } from "@mantine/core"
@@ -6,6 +6,7 @@ import { Dropzone } from "@mantine/dropzone"
 import { IconAlertCircle, IconCheck, IconFileText, IconMinus, IconShieldCheck, IconShieldX, IconUpload, IconX } from "@tabler/icons-react"
 import AccountShell from "../layouts/AccountShell"
 import { CheckLine, Verdict, checkReceipt, parseReceipt, sha256Hex } from "../receipts/check"
+import { useI18n } from "../i18n"
 
 const TONE = {
   ok: { color: "green", Icon: IconShieldCheck },
@@ -35,6 +36,7 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
 
 /** Public page: no sign-in. The file is hashed in the browser and never uploaded. */
 export default function Verify() {
+  const { t, lang } = useI18n()
   const [file, setFile] = useState<{ name: string; hash: string } | null>(null)
   const [receiptText, setReceiptText] = useState("")
   const [verdict, setVerdict] = useState<Verdict | null>(null)
@@ -42,6 +44,8 @@ export default function Verify() {
   const [busy, setBusy] = useState(false)
 
   const reset = () => { setVerdict(null); setError(null) }
+  // A verdict is written in the language it was produced in, so drop it when the language changes.
+  useEffect(() => { setVerdict(null); setError(null) }, [lang])
 
   const onFile = async (files: File[]) => {
     reset()
@@ -72,14 +76,14 @@ export default function Verify() {
     <AccountShell>
       <Stack spacing="xl" maw={760} mx="auto">
         <Stack spacing={6}>
-          <Title order={1}>Перевірити документ</Title>
+          <Title order={1}>{t("Verify a document", "Перевірити документ")}</Title>
           <Text c="dimmed">
-            Переконайтеся, що документ не змінювали з моменту фіксації. Вхід не потрібен, а сам файл нікуди не завантажується:
-            перевірка відбувається у вашому браузері.
+            {t("Make sure a document has not been changed since it was recorded. No sign-in is needed, and the file itself is never uploaded: the check happens in your browser.",
+               "Переконайтеся, що документ не змінювали з моменту фіксації. Вхід не потрібен, а сам файл нікуди не завантажується: перевірка відбувається у вашому браузері.")}
           </Text>
         </Stack>
 
-        <Step n="1" title="Файл документа">
+        <Step n="1" title={t("Document file", "Файл документа")}>
           {file ? (
             <Group position="apart">
               <Group spacing="sm">
@@ -89,29 +93,29 @@ export default function Verify() {
                   <Text fz="xs" c="dimmed" ff="monospace">{file.hash.slice(0, 24)}…</Text>
                 </Stack>
               </Group>
-              <Button variant="subtle" color="gray" size="xs" onClick={() => { setFile(null); reset() }}>Прибрати</Button>
+              <Button variant="subtle" color="gray" size="xs" onClick={() => { setFile(null); reset() }}>{t("Remove", "Прибрати")}</Button>
             </Group>
           ) : (
             <Dropzone onDrop={onFile} multiple={false} maxSize={500 * 1024 * 1024}>
               <Group position="center" spacing="md" mih={86} sx={{ pointerEvents: "none" }}>
                 <IconUpload size="1.8rem" stroke={1.4} />
                 <Stack spacing={2}>
-                  <Text fw={500}>Перетягніть файл або натисніть, щоб обрати</Text>
-                  <Text fz="sm" c="dimmed">Необов'язково, але без нього не можна довести, що файл не змінений.</Text>
+                  <Text fw={500}>{t("Drag a file here or click to choose", "Перетягніть файл або натисніть, щоб обрати")}</Text>
+                  <Text fz="sm" c="dimmed">{t("Optional, but without it you cannot prove the file is unchanged.", "Необов'язково, але без нього не можна довести, що файл не змінений.")}</Text>
                 </Stack>
               </Group>
             </Dropzone>
           )}
         </Step>
 
-        <Step n="2" title="Квитанція">
+        <Step n="2" title={t("Receipt", "Квитанція")}>
           <Dropzone onDrop={onReceiptFile} multiple={false} accept={["application/json", "text/plain"]} maxSize={1024 * 1024}>
             <Group position="center" spacing="md" mih={70} sx={{ pointerEvents: "none" }}>
               <IconUpload size="1.6rem" stroke={1.4} />
-              <Text fw={500}>Завантажте файл квитанції (.json)</Text>
+              <Text fw={500}>{t("Upload the receipt file (.json)", "Завантажте файл квитанції (.json)")}</Text>
             </Group>
           </Dropzone>
-          <Text fz="sm" c="dimmed" ta="center">або вставте технічні дані з квитанції</Text>
+          <Text fz="sm" c="dimmed" ta="center">{t("or paste the technical data from the receipt", "або вставте технічні дані з квитанції")}</Text>
           <Textarea
             value={receiptText}
             onChange={(e) => { setReceiptText(e.currentTarget.value); reset() }}
@@ -123,7 +127,7 @@ export default function Verify() {
           />
         </Step>
 
-        <Button size="md" onClick={run} disabled={!receiptText.trim()} loading={busy}>Перевірити</Button>
+        <Button size="md" onClick={run} disabled={!receiptText.trim()} loading={busy}>{t("Verify", "Перевірити")}</Button>
 
         {error && <Alert color="red" icon={<IconAlertCircle size="1rem" />}>{error}</Alert>}
 
@@ -134,7 +138,7 @@ export default function Verify() {
                 <ThemeIcon size={44} radius="xl" color={tone.color}><tone.Icon size="1.6rem" /></ThemeIcon>
                 <Stack spacing={2}>
                   <Title order={3}>{verdict.headline}</Title>
-                  {verdict.state === "partial" && <Text fz="sm" c="dimmed">Додайте файл у кроці 1 і перевірте ще раз, щоб підтвердити, що він не змінений.</Text>}
+                  {verdict.state === "partial" && <Text fz="sm" c="dimmed">{t("Add the file in step 1 and verify again to confirm it is unchanged.", "Додайте файл у кроці 1 і перевірте ще раз, щоб підтвердити, що він не змінений.")}</Text>}
                 </Stack>
               </Group>
 
@@ -152,12 +156,12 @@ export default function Verify() {
 
               {verdict.demoRegistry && (
                 <Alert color="orange" variant="light" icon={<IconAlertCircle size="1rem" />}>
-                  Це квитанція з <b>демонстраційного реєстру</b>: запис імітується на сервері й поки не в публічному блокчейні.
+                  {lang === "uk" ? <>Це квитанція з <b>демонстраційного реєстру</b>: запис імітується на сервері й поки не в публічному блокчейні.</> : <>This receipt comes from a <b>demo registry</b>: the record is simulated on the server and is not yet on a public blockchain.</>}
                 </Alert>
               )}
 
               <Group spacing="xs">
-                <Badge variant="light">Партія {verdict.epoch}</Badge>
+                <Badge variant="light">{t("Batch", "Партія")} {verdict.epoch}</Badge>
                 {verdict.txHash && <Code>{verdict.txHash.slice(0, 18)}…</Code>}
               </Group>
             </Stack>

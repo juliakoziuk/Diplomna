@@ -4,6 +4,7 @@ import { Dropzone } from "@mantine/dropzone"
 import { IconAlertCircle, IconFileUpload, IconReceipt, IconShieldCheck } from "@tabler/icons-react"
 import { hashLeaf, verifyInclusionProof } from "verification-sdk"
 import { AnchorItem, accountApi, formatDateTime } from "../../api/account"
+import { tr, useI18n } from "../../i18n"
 import ReceiptModal from "./ReceiptModal"
 
 async function sha256Hex(file: File): Promise<string> {
@@ -19,22 +20,23 @@ async function verifyReceipt(item: AnchorItem): Promise<Check[]> {
   const leafOk = hashLeaf(r.sha256).toLowerCase() === r.leaf.toLowerCase()
   const proofOk = leafOk && verifyInclusionProof(r.leaf, r.siblings, r.batchRoot)
   const checks: Check[] = [
-    { ok: proofOk, text: proofOk ? `Документ входить у батч епохи ${r.epoch} (${r.siblings.length} хешів доказу)` : "Доказ Меркла не сходиться до кореня батчу" },
+    { ok: proofOk, text: proofOk ? tr(`The document is part of epoch ${r.epoch} batch (${r.siblings.length} proof hashes)`, `Документ входить у батч епохи ${r.epoch} (${r.siblings.length} хешів доказу)`) : tr("The Merkle proof does not lead to the batch root", "Доказ Меркла не сходиться до кореня батчу") },
   ]
   try {
     const anchor = await accountApi.chainRoot(r.epoch)
     const same = anchor.root.toLowerCase() === r.batchRoot.toLowerCase()
-    checks.push({ ok: same, text: same ? `Корінь збігається з анкором версії ${r.epoch}` : "Корінь у реєстрі інший, квитанцію підроблено" })
+    checks.push({ ok: same, text: same ? tr(`The root matches the anchor of version ${r.epoch}`, `Корінь збігається з анкором версії ${r.epoch}`) : tr("The registry holds a different root: the receipt is forged", "Корінь у реєстрі інший, квитанцію підроблено") })
   } catch {
     checks.push({
       ok: false,
-      text: "Анкор цієї епохи недоступний. Поки контракт не задеплоєний, mock-реєстр очищається при перезапуску бекенда.",
+      text: tr("No record for this epoch is available in the registry.", "Запис цієї епохи недоступний у реєстрі."),
     })
   }
   return checks
 }
 
 export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => void }) {
+  const { t } = useI18n()
   const [items, setItems] = useState<AnchorItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -93,8 +95,8 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
         <Group position="center" spacing="md" mih={110} sx={{ pointerEvents: "none" }}>
           <IconFileUpload size="2.2rem" stroke={1.4} />
           <Stack spacing={2}>
-            <Text fw={500}>Перетягніть файли або натисніть, щоб обрати</Text>
-            <Text fz="sm" c="dimmed">Файл не покидає браузер: на сервер іде лише його SHA-256.</Text>
+            <Text fw={500}>{t("Drag files here or click to choose", "Перетягніть файли або натисніть, щоб обрати")}</Text>
+            <Text fz="sm" c="dimmed">{t("The file never leaves the browser: only its SHA-256 goes to the server.", "Файл не покидає браузер: на сервер іде лише його SHA-256.")}</Text>
           </Stack>
         </Group>
       </Dropzone>
@@ -102,8 +104,8 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
       {pending > 0 && (
         <Alert color="orange" icon={<Loader size="xs" />}>
           <Group position="apart">
-            <Text fz="sm">{pending} документ(и) чекають закриття епохи. Епоха закривається автоматично щохвилини.</Text>
-            <Button size="xs" variant="light" loading={closing} onClick={closeEpoch}>Закрити зараз (тест)</Button>
+            <Text fz="sm">{t(`${pending} document(s) are waiting for the epoch to close. It closes automatically every minute.`, `${pending} документ(и) чекають закриття епохи. Епоха закривається автоматично щохвилини.`)}</Text>
+            <Button size="xs" variant="light" loading={closing} onClick={closeEpoch}>{t("Close now (test)", "Закрити зараз (тест)")}</Button>
           </Group>
         </Alert>
       )}
@@ -112,18 +114,18 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
         {!items ? (
           <Group p="lg"><Loader size="sm" /></Group>
         ) : items.length === 0 ? (
-          <Text p="lg" c="dimmed">Ще немає документів. Додайте перший файл вище або надішліть хеш через API.</Text>
+          <Text p="lg" c="dimmed">{t("No documents yet. Add your first file above or send a hash through the API.", "Ще немає документів. Додайте перший файл вище або надішліть хеш через API.")}</Text>
         ) : (
           <ScrollArea>
             <Table verticalSpacing="sm" highlightOnHover miw={760}>
               <thead>
-                <tr><th>Документ</th><th>SHA-256</th><th>Статус</th><th>Додано</th><th /></tr>
+                <tr><th>{t("Document", "Документ")}</th><th>SHA-256</th><th>{t("Status", "Статус")}</th><th>{t("Added", "Додано")}</th><th /></tr>
               </thead>
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <Text fz="sm" fw={500}>{item.label || "без назви"}</Text>
+                      <Text fz="sm" fw={500}>{item.label || t("untitled", "без назви")}</Text>
                       <Text fz="xs" c="dimmed" ff="monospace">{item.id}</Text>
                       {checks[item.id]?.map((c, i) => (
                         <Text key={i} fz="xs" c={c.ok ? "green" : "red"}>{c.ok ? "✓" : "✗"} {c.text}</Text>
@@ -132,8 +134,8 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
                     <td><Code>{item.sha256.slice(0, 16)}…</Code></td>
                     <td>
                       {item.status === "anchored"
-                        ? <Badge color="green">Епоха {item.receipt?.epoch}</Badge>
-                        : <Badge color="orange">В батчі</Badge>}
+                        ? <Badge color="green">{t("Epoch", "Епоха")} {item.receipt?.epoch}</Badge>
+                        : <Badge color="orange">{t("In batch", "В батчі")}</Badge>}
                     </td>
                     <td><Text fz="sm">{formatDateTime(item.createdAt)}</Text></td>
                     <td>
@@ -144,10 +146,10 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
                               const result = await verifyReceipt(item)
                               setChecks((c) => ({ ...c, [item.id]: result }))
                             }}>
-                            Перевірити
+                            {t("Verify", "Перевірити")}
                           </Button>
                           <Button size="xs" variant="default" leftIcon={<IconReceipt size="0.9rem" />} onClick={() => setReceiptItem(item)}>
-                            Квитанція
+                            {t("Receipt", "Квитанція")}
                           </Button>
                         </Group>
                       )}

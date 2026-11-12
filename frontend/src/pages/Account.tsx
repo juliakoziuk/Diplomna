@@ -8,11 +8,13 @@ import DocumentsTab from "../components/account/DocumentsTab"
 import ApiKeysTab from "../components/account/ApiKeysTab"
 import BillingTab from "../components/account/BillingTab"
 import { BillingOverview, billingApi } from "../api/account"
+import { useI18n } from "../i18n"
 
 const TABS = ["overview", "documents", "api-keys", "billing"] as const
 type Tab = (typeof TABS)[number]
 
 export default function Account() {
+  const { t } = useI18n()
   const userId = useRequireLogin(true)
   const [params, setParams] = useSearchParams()
   const [overview, setOverview] = useState<BillingOverview | null>(null)
@@ -37,14 +39,14 @@ export default function Account() {
         .confirm(sessionId)
         .then((o) => {
           setOverview(o)
-          setNotice(`Оплату прийнято. Тариф ${o.planName} активний.`)
+          setNotice(t(`Payment received. The ${o.planName} plan is active.`, `Оплату прийнято. Тариф ${o.planName} активний.`))
         })
         .catch((e) => setError(e.message))
         .finally(() => setParams({}, { replace: true }))
       return
     }
     if (params.get("changed") === "1") {
-      setNotice("Тариф змінено. Різницю в ціні буде враховано в наступному рахунку.")
+      setNotice(t("Plan changed. The price difference will be included in your next invoice.", "Тариф змінено. Різницю в ціні буде враховано в наступному рахунку."))
       setParams({}, { replace: true })
     }
     refresh()
@@ -56,12 +58,12 @@ export default function Account() {
     <AccountShell>
       {!userId ? (
         <Stack align="flex-start">
-          <Title order={2}>Кабінет</Title>
-          <Text c="dimmed">Увійдіть або зареєструйтесь, щоб керувати тарифом і документами.</Text>
+          <Title order={2}>{t("Account", "Кабінет")}</Title>
+          <Text c="dimmed">{t("Sign in or sign up to manage your plan and documents.", "Увійдіть або зареєструйтесь, щоб керувати тарифом і документами.")}</Text>
         </Stack>
       ) : (
         <Stack spacing="lg">
-          <Title order={1}>Кабінет</Title>
+          <Title order={1}>{t("Account", "Кабінет")}</Title>
           {notice && (
             <Alert color="green" icon={<IconCircleCheck size="1rem" />} withCloseButton onClose={() => setNotice(null)}>
               {notice}
@@ -77,10 +79,10 @@ export default function Account() {
           ) : (
             <Tabs value={tab} onTabChange={(v) => v && selectTab(v)} keepMounted={false}>
               <Tabs.List mb="lg">
-                <Tabs.Tab value="overview" icon={<IconGauge size="1rem" />}>Огляд</Tabs.Tab>
-                <Tabs.Tab value="documents" icon={<IconFiles size="1rem" />}>Документи</Tabs.Tab>
-                <Tabs.Tab value="api-keys" icon={<IconKey size="1rem" />}>API-ключі</Tabs.Tab>
-                <Tabs.Tab value="billing" icon={<IconCreditCard size="1rem" />}>Оплата</Tabs.Tab>
+                <Tabs.Tab value="overview" icon={<IconGauge size="1rem" />}>{t("Overview", "Огляд")}</Tabs.Tab>
+                <Tabs.Tab value="documents" icon={<IconFiles size="1rem" />}>{t("Documents", "Документи")}</Tabs.Tab>
+                <Tabs.Tab value="api-keys" icon={<IconKey size="1rem" />}>{t("API keys", "API-ключі")}</Tabs.Tab>
+                <Tabs.Tab value="billing" icon={<IconCreditCard size="1rem" />}>{t("Billing", "Оплата")}</Tabs.Tab>
               </Tabs.List>
               <Tabs.Panel value="overview"><OverviewTab overview={overview} onChange={setOverview} /></Tabs.Panel>
               <Tabs.Panel value="documents"><DocumentsTab onUsageChange={refresh} /></Tabs.Panel>

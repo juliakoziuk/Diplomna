@@ -46,6 +46,9 @@ test("AnchorProof: повний прохід по продукту", async ({ pa
     password: randomBytes(9).toString("base64url"),
   }
 
+  // The demo script is written against the Ukrainian UI; English is the default language.
+  await page.addInitScript(() => localStorage.setItem("ap-lang", "uk"))
+
   await test.step("Сторінка продукту", async () => {
     await page.goto("/product")
     await expect(page.getByRole("heading", { name: /Доведіть, що документ не підмінили/ })).toBeVisible()

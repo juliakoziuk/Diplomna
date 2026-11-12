@@ -1,3 +1,4 @@
+import { tr } from "../i18n"
 /**
  * In-browser simulation behind the product page's playground: a 2D corpus,
  * a 6-cluster IVF index with Merkle trees, an untrusted server that can
@@ -138,12 +139,12 @@ function proveBall(node: BallNode, q: Pt, rk: number, hiddenId: string | null, v
 }
 interface WalkAcc { leaves: Doc[]; cuts: number; nodes: number; err: string | null }
 function walkBall(p: BallProof, q: Pt, rk: number, acc: WalkAcc): string {
-  if (!p || typeof p !== "object") { acc.err = acc.err || "пошкоджена структура доказу"; return EMPTY }
+  if (!p || typeof p !== "object") { acc.err = acc.err || tr("damaged proof structure", "пошкоджена структура доказу"); return EMPTY }
   if (p.t === "leaf") { acc.leaves.push({ id: p.id, x: p.x, y: p.y }); return leafOf(p) }
   if (p.t === "cut") {
     acc.cuts++
     if (!(dist(q, p.c) - p.rad > rk))
-      acc.err = acc.err || `куля (${p.c.x.toFixed(2)}, ${p.c.y.toFixed(2)}) відсічена неправомірно: вона ближча за r_k`
+      acc.err = acc.err || tr(`ball (${p.c.x.toFixed(2)}, ${p.c.y.toFixed(2)}) was cut off wrongly: it is closer than r_k`, `куля (${p.c.x.toFixed(2)}, ${p.c.y.toFixed(2)}) відсічена неправомірно: вона ближча за r_k`)
     return ballHash(p.l, p.r, p.c, p.rad)
   }
   acc.nodes++
@@ -288,28 +289,28 @@ export function verify(b: Bundle, q: Pt, k: number): { steps: Step[]; accepted: 
   const steps: Step[] = []
   const add = (label: string, status: StepStatus, detail: string) => steps.push({ label, status, detail })
   const anchor = CHAIN.find((a) => a.version === b.version)
-  add("Корінь збігається з анкором у ланцюжку", anchor && anchor.root === b.root ? "ok" : "fail",
-    `getRoot(v${b.version}) = ${anchor ? short(anchor.root) : "немає анкора"}`)
-  if (b.variant === "V0") add("Версія індексу найсвіжіша", "skip", "не перевіряється")
-  else add("Версія індексу найсвіжіша", b.version === LATEST ? "ok" : "fail",
+  add(tr("The root matches the on-chain anchor", "Корінь збігається з анкором у ланцюжку"), anchor && anchor.root === b.root ? "ok" : "fail",
+    `getRoot(v${b.version}) = ${anchor ? short(anchor.root) : tr("no anchor", "немає анкора")}`)
+  if (b.variant === "V0") add(tr("The index version is the latest", "Версія індексу найсвіжіша"), "skip", tr("not checked", "не перевіряється"))
+  else add(tr("The index version is the latest", "Версія індексу найсвіжіша"), b.version === LATEST ? "ok" : "fail",
     b.version === LATEST ? `v${b.version} = latestVersion` : `v${b.version} < latestVersion = v${LATEST}`)
   const croot = new Map(b.centroids.map((c) => [c.id, c]))
   if (b.variant === "V0") {
     const bad = b.centroids.filter((c) => !verifyInclusion(cLeaf(c), c.id, c.sib!, b.root))
-    add("Центроїди автентифіковані", bad.length ? "fail" : "ok", bad.length ? `кластер ${bad[0].id}: доказ включення хибний` : `${b.centroids.length} доказів включення`)
+    add(tr("Centroids are authenticated", "Центроїди автентифіковані"), bad.length ? "fail" : "ok", bad.length ? tr(`cluster ${bad[0].id}: the inclusion proof is wrong`, `кластер ${bad[0].id}: доказ включення хибний`) : tr(`${b.centroids.length} inclusion proofs`, `${b.centroids.length} доказів включення`))
     const exp = new Set([...b.centroids].sort((x, y) => x.dist! - y.dist!).slice(0, b.nprobe).map((c) => c.id))
     const okSel = b.probed.every((id) => exp.has(id))
-    add("Вибір кластерів чесний", okSel ? "trust" : "fail", okSel ? "за відстанями, які надіслав сам сервер" : "кластер поза top-nprobe")
+    add(tr("The cluster choice is honest", "Вибір кластерів чесний"), okSel ? "trust" : "fail", okSel ? tr("by distances the server itself sent", "за відстанями, які надіслав сам сервер") : tr("a cluster outside the top-nprobe", "кластер поза top-nprobe"))
     const badR = b.resProofs!.find((r) => { const c = croot.get(r.cid); return !c || !verifyInclusion(leafOf(r), r.index, r.sib, c.root) })
-    add("Результати є в індексі", badR ? "fail" : "ok", badR ? `${badR.id}: хеш не сходиться до кореня кластера` : `${b.resProofs!.length} доказів включення`)
-    add("Нічого не приховано", "skip", "клієнт бачить лише k результатів")
-    add("Top-k перераховано клієнтом", "skip", "не перевіряється")
+    add(tr("The results are in the index", "Результати є в індексі"), badR ? "fail" : "ok", badR ? tr(`${badR.id}: the hash does not lead to the cluster root`, `${badR.id}: хеш не сходиться до кореня кластера`) : tr(`${b.resProofs!.length} inclusion proofs`, `${b.resProofs!.length} доказів включення`))
+    add(tr("Nothing was hidden", "Нічого не приховано"), "skip", tr("the client sees only k results", "клієнт бачить лише k результатів"))
+    add(tr("Top-k recomputed by the client", "Top-k перераховано клієнтом"), "skip", tr("not checked", "не перевіряється"))
   } else {
     const gOk = b.centroids.length === NLIST && rootOf(b.centroids.map(cLeaf)) === b.root
-    add("Центроїди автентифіковані", gOk ? "ok" : "fail", gOk ? `globalRoot перераховано з ${NLIST} листків` : "globalRoot не відтворюється")
+    add(tr("Centroids are authenticated", "Центроїди автентифіковані"), gOk ? "ok" : "fail", gOk ? tr(`globalRoot recomputed from ${NLIST} leaves`, `globalRoot перераховано з ${NLIST} листків`) : tr("globalRoot cannot be reproduced", "globalRoot не відтворюється"))
     const mine = b.centroids.map((c) => ({ id: c.id, d: dist(q, c.c) })).sort((x, y) => x.d - y.d).slice(0, b.nprobe).map((c) => c.id)
     const selOk = mine.length === b.probed.length && mine.every((id) => b.probed.includes(id))
-    add("Вибір кластерів чесний", selOk ? "ok" : "fail", selOk ? `власні відстані: {${mine.join(", ")}}` : `мають бути {${mine.join(", ")}}, сервер узяв {${b.probed.join(", ")}}`)
+    add(tr("The cluster choice is honest", "Вибір кластерів чесний"), selOk ? "ok" : "fail", selOk ? tr(`own distances: {${mine.join(", ")}}`, `власні відстані: {${mine.join(", ")}}`) : tr(`should be {${mine.join(", ")}}, the server took {${b.probed.join(", ")}}`, `мають бути {${mine.join(", ")}}, сервер узяв {${b.probed.join(", ")}}`))
     const rk = b.results.length ? Math.max(...b.results.map((r) => dist(q, r))) : 0
     const revealed = new Map<string, Result>()
     let compl: string | null = null, nRev = 0, extra = ""
@@ -322,10 +323,10 @@ export function verify(b: Bundle, q: Pt, k: number): { steps: Step[]; accepted: 
         cuts += acc.cuts
         acc.leaves.forEach((l) => revealed.set(l.id, { ...l, cid: bl.cid }))
         nRev += acc.leaves.length
-        if (!compl && acc.err) compl = `кластер ${bl.cid}: ${acc.err}`
-        if (!compl && h !== c.ballRoot) compl = `кластер ${bl.cid}: корінь ball-tree ≠ закомічений`
+        if (!compl && acc.err) compl = tr(`cluster ${bl.cid}: ${acc.err}`, `кластер ${bl.cid}: ${acc.err}`)
+        if (!compl && h !== c.ballRoot) compl = tr(`cluster ${bl.cid}: the ball-tree root ≠ the committed one`, `кластер ${bl.cid}: корінь ball-tree ≠ закомічений`)
       }
-      extra = `${nRev} листків, ${cuts} куль відсічено за межею r_k = ${rk.toFixed(3)}`
+      extra = tr(`${nRev} leaves, ${cuts} balls cut off beyond r_k = ${rk.toFixed(3)}`, `${nRev} листків, ${cuts} куль відсічено за межею r_k = ${rk.toFixed(3)}`)
     } else {
       for (const rg of b.ranges!) {
         const c = croot.get(rg.cid)!
@@ -336,21 +337,23 @@ export function verify(b: Bundle, q: Pt, k: number): { steps: Step[]; accepted: 
         const got = b.variant === "A"
           ? rg.leaves.length === c.size ? rootOf(hashes) : null
           : rootFromRange(hashes, rg.lo, rg.proof, heightFor(c.size))
-        if (got !== c.root) { compl = `кластер ${rg.cid}: корінь ${b.variant === "A" ? "кластера" : "діапазону"} ≠ закомічений`; continue }
+        if (got !== c.root) { compl = tr(`cluster ${rg.cid}: the ${b.variant === "A" ? "cluster" : "range"} root ≠ the committed one`, `кластер ${rg.cid}: корінь ${b.variant === "A" ? "кластера" : "діапазону"} ≠ закомічений`); continue }
         if (b.variant === "B" && rg.leaves.length) {
           const dqc = dist(q, c.c), f = rg.leaves[0], l = rg.leaves[rg.leaves.length - 1]
-          if (!(rg.lo === 0 || dist(f, c.c) < dqc - rk)) compl = `кластер ${rg.cid}: ліва межа всередині кільця`
-          else if (!(rg.lo + rg.leaves.length - 1 === c.size - 1 || dist(l, c.c) > dqc + rk)) compl = `кластер ${rg.cid}: права межа всередині кільця`
+          if (!(rg.lo === 0 || dist(f, c.c) < dqc - rk)) compl = tr(`cluster ${rg.cid}: the left boundary is inside the ring`, `кластер ${rg.cid}: ліва межа всередині кільця`)
+          else if (!(rg.lo + rg.leaves.length - 1 === c.size - 1 || dist(l, c.c) > dqc + rk)) compl = tr(`cluster ${rg.cid}: the right boundary is inside the ring`, `кластер ${rg.cid}: права межа всередині кільця`)
         }
       }
-      extra = b.variant === "A" ? `${nRev} листків, корені кластерів відтворено` : `r_k = ${rk.toFixed(3)}, ${nRev} листків у кільцях, межі поза кільцем`
+      extra = b.variant === "A"
+        ? tr(`${nRev} leaves, cluster roots reproduced`, `${nRev} листків, корені кластерів відтворено`)
+        : tr(`r_k = ${rk.toFixed(3)}, ${nRev} leaves in the rings, boundaries outside the ring`, `r_k = ${rk.toFixed(3)}, ${nRev} листків у кільцях, межі поза кільцем`)
     }
     const badR = b.results.find((r) => { const l = revealed.get(r.id); return !l || l.x !== r.x || l.y !== r.y || l.cid !== r.cid })
-    add("Результати є в індексі", badR ? "fail" : "ok", badR ? `${badR.id} не збігається з розкритими листками` : "кожен результат є в автентифікованих даних")
-    add("Нічого не приховано", compl ? "fail" : "ok", compl || extra)
+    add(tr("The results are in the index", "Результати є в індексі"), badR ? "fail" : "ok", badR ? tr(`${badR.id} does not match the revealed leaves`, `${badR.id} не збігається з розкритими листками`) : tr("every result is in the authenticated data", "кожен результат є в автентифікованих даних"))
+    add(tr("Nothing was hidden", "Нічого не приховано"), compl ? "fail" : "ok", compl || extra)
     const all = [...revealed.values()].map((l) => ({ id: l.id, d: dist(q, l) })).sort((x, y) => x.d - y.d).slice(0, k).map((l) => l.id)
     const same = all.length === b.results.length && all.every((id, i) => id === b.results[i].id)
-    add("Top-k перераховано клієнтом", same ? "ok" : "fail", same ? "збігається з відповіддю сервера" : `очікувано ${all.slice(0, 3).join(", ")}…`)
+    add(tr("Top-k recomputed by the client", "Top-k перераховано клієнтом"), same ? "ok" : "fail", same ? tr("matches the server's answer", "збігається з відповіддю сервера") : tr(`expected ${all.slice(0, 3).join(", ")}…`, `очікувано ${all.slice(0, 3).join(", ")}…`))
   }
   return { steps, accepted: !steps.some((s) => s.status === "fail") }
 }

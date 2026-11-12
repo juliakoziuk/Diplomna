@@ -57,6 +57,8 @@ export interface ChainReader {
 export interface VerifyOptions {
   /** The client's own embedding of the query. Without it the server's queryVector is trusted. */
   queryVector?: number[];
+  /** Language of step labels and failure reasons. Defaults to 'uk' for backward compatibility. */
+  lang?: 'en' | 'uk';
 }
 
 export interface VerificationStep {

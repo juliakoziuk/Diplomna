@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+.git
+.idea
+.claude
+docs
+contracts
+*.webm
+**/.env
+**/.env.*
+!**/.env.example
+**/.demo-pg
+frontend/e2e
+frontend/test-results
+backend/test

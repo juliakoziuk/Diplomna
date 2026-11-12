@@ -10,6 +10,15 @@ import { Request, Response } from 'express';
 import { User } from '../user/user.model';
 import { LoginDto, RegisterDto } from './dto';
 import * as bcrypt from 'bcrypt';
+
+/** `secure` needs HTTPS, so it is on only in production; sameSite blocks cross-site sends. */
+const cookieOptions = () =>
+  ({
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  } as const);
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -47,7 +56,7 @@ export class AuthService {
         secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
       },
     );
-    res.cookie('access_token', accessToken, { httpOnly: true });
+    res.cookie('access_token', accessToken, cookieOptions());
 
     return accessToken;
   }
@@ -66,10 +75,8 @@ export class AuthService {
       expiresIn: '7d',
     });
 
-    response.cookie('access_token', accessToken, { httpOnly: true });
-    response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-    });
+    response.cookie('access_token', accessToken, cookieOptions());
+    response.cookie('refresh_token', refreshToken, cookieOptions());
     return { user };
   }
 

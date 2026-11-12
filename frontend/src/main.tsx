@@ -5,6 +5,7 @@ import "./index.css"
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom"
 
 import ThemeProvider from "./theme/ThemeProvider.tsx"
+import { I18nProvider } from "./i18n"
 import { ModalsProvider } from "@mantine/modals"
 import VerifiableSearchDemo from "./pages/VerifiableSearchDemo.tsx"
 import Pricing from "./pages/Pricing.tsx"
@@ -48,7 +49,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ThemeProvider>
       <ModalsProvider>
-        <RouterProvider router={router} />
+        <I18nProvider>
+          <RouterProvider router={router} />
+        </I18nProvider>
       </ModalsProvider>
     </ThemeProvider>
   </React.StrictMode>

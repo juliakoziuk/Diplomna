@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Alert, Button, Chip, Grid, Group, Paper, SimpleGrid, Slider, Stack, Text } from "@mantine/core"
 import StepList from "./StepList"
 import { useIsDark } from "../theme/ThemeProvider"
+import { tr, useI18n } from "../i18n"
 import {
   Attack, Bundle, Method, Pt, dist, forEachBall, revealedIds, serve, stats, toReceipt, verify,
 } from "./sim"
@@ -18,25 +19,25 @@ const PALETTES = {
 }
 type Palette = (typeof PALETTES)["light"]
 
-const METHOD_OPTIONS: { value: Method; label: string; hint: string }[] = [
-  { value: "V0", label: "Лише включення", hint: "типова реалізація" },
-  { value: "A", label: "A · повне розкриття", hint: "базова лінія" },
-  { value: "B", label: "B · кільце", hint: "основний" },
-  { value: "C", label: "C · ball-tree", hint: "експеримент" },
+const methodOptions = (): { value: Method; label: string }[] => [
+  { value: "V0", label: tr("Inclusion only", "Лише включення") },
+  { value: "A", label: tr("A · full disclosure", "A · повне розкриття") },
+  { value: "B", label: tr("B · ring", "B · кільце") },
+  { value: "C", label: "C · ball-tree" },
 ]
-const ATTACK_OPTIONS: { value: Attack; label: string }[] = [
-  { value: "none", label: "Чесний" },
-  { value: "hide", label: "Приховати найкращий" },
-  { value: "centroid", label: "Підмінити кластери" },
-  { value: "tamper", label: "Підробити вектор" },
-  { value: "rollback", label: "Rollback на v1" },
+const attackOptions = (): { value: Attack; label: string }[] => [
+  { value: "none", label: tr("Honest", "Чесний") },
+  { value: "hide", label: tr("Hide the best", "Приховати найкращий") },
+  { value: "centroid", label: tr("Swap clusters", "Підмінити кластери") },
+  { value: "tamper", label: tr("Forge a vector", "Підробити вектор") },
+  { value: "rollback", label: tr("Rollback to v1", "Rollback на v1") },
 ]
-const ATTACK_TEXT: Record<Exclude<Attack, "none">, string> = {
-  hide: "приховав найкращий документ",
-  centroid: "шукав не в тих кластерах",
-  tamper: "підробив вектор результату",
-  rollback: "відповів зі старого індексу v1",
-}
+const attackText = (): Record<Exclude<Attack, "none">, string> => ({
+  hide: tr("hid the best document", "приховав найкращий документ"),
+  centroid: tr("searched the wrong clusters", "шукав не в тих кластерах"),
+  tamper: tr("forged a result vector", "підробив вектор результату"),
+  rollback: tr("answered from the old index v1", "відповів зі старого індексу v1"),
+})
 
 function draw(canvas: HTMLCanvasElement, b: Bundle, q: Pt, pal: Palette) {
   const { clusters: CLUSTER_COLORS, accent: ACCENT, ink: INK, muted: MUTED, bad: BAD, chain: CHAIN } = pal
@@ -108,6 +109,7 @@ interface Props {
 export default function Playground({ onParams, onSendReceipt }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dark = useIsDark()
+  const { t, lang } = useI18n()
   const [q, setQ] = useState<Pt>({ x: 0.44, y: 0.47 })
   const [k, setK] = useState(4)
   const [nprobe, setNprobe] = useState(2)
@@ -115,7 +117,7 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
   const [attack, setAttack] = useState<Attack>("none")
 
   const bundle = useMemo(() => serve(q, k, nprobe, method, attack), [q, k, nprobe, method, attack])
-  const result = useMemo(() => verify(bundle, q, k), [bundle, q, k])
+  const result = useMemo(() => verify(bundle, q, k), [bundle, q, k, lang])
   const st = useMemo(() => stats(bundle), [bundle])
 
   useEffect(() => {
@@ -136,10 +138,10 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
   const attacked = attack !== "none"
   const firstFail = result.steps.find((s) => s.status === "fail")
   const verdict = result.accepted && attacked
-    ? { color: "yellow", title: "Прийнято. Атаку не виявлено", text: `Сервер ${ATTACK_TEXT[attack as Exclude<Attack, "none">]}, а клієнт прийняв відповідь як коректну.` }
+    ? { color: "yellow", title: t("Accepted. The attack was not detected", "Прийнято. Атаку не виявлено"), text: t(`The server ${attackText()[attack as Exclude<Attack, "none">]}, and the client accepted the answer as correct.`, `Сервер ${attackText()[attack as Exclude<Attack, "none">]}, а клієнт прийняв відповідь як коректну.`) }
     : result.accepted
-      ? { color: "green", title: "Прийнято", text: "Сервер чесний, усі перевірки пройдено." }
-      : { color: "red", title: "Відхилено", text: `${attacked ? `Сервер ${ATTACK_TEXT[attack as Exclude<Attack, "none">]}. ` : ""}${firstFail?.detail}.` }
+      ? { color: "green", title: t("Accepted", "Прийнято"), text: t("The server is honest, all checks passed.", "Сервер чесний, усі перевірки пройдено.") }
+      : { color: "red", title: t("Rejected", "Відхилено"), text: `${attacked ? t(`The server ${attackText()[attack as Exclude<Attack, "none">]}. `, `Сервер ${attackText()[attack as Exclude<Attack, "none">]}. `) : ""}${firstFail?.detail}.` }
 
   const { ids: revIds, bounds } = revealedIds(bundle)
   const resIds = new Set(bundle.results.map((r) => r.id))
@@ -148,32 +150,32 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
     <Grid gutter="lg">
       <Grid.Col md={6}>
         <Paper withBorder p="sm" radius="md">
-          <canvas ref={canvasRef} className="ap-canvas" onClick={onCanvasClick} aria-label="Поле векторів: натисніть, щоб задати запит" />
+          <canvas ref={canvasRef} className="ap-canvas" onClick={onCanvasClick} aria-label={t("Vector field: click to set the query", "Поле векторів: натисніть, щоб задати запит")} />
           <Group spacing="xs" mt="sm">
             <Button size="xs" variant="default" onClick={() => setQ({ x: 0.08 + Math.random() * 0.84, y: 0.08 + Math.random() * 0.84 })}>
-              Випадковий запит
+              {t("Random query", "Випадковий запит")}
             </Button>
             <Button size="xs" variant="light" onClick={() => onSendReceipt(JSON.stringify(toReceipt(bundle, q, k), null, 2))}>
-              Відкрити квитанцію в перевірці
+              {t("Open the receipt in the verifier", "Відкрити квитанцію в перевірці")}
             </Button>
           </Group>
           <Text fz="xs" c="dimmed" mt="xs">
-            Помаранчеві кола — результати, штрихове кільце — діапазон методу B, синя штрихова куля — відсічене піддерево C, червоний хрестик — документ, який приховав сервер.
+            {t("Orange circles are results, the dashed ring is the range of method B, the blue dashed ball is a cut-off subtree of C, the red cross is a document the server hid.", "Помаранчеві кола — результати, штрихове кільце — діапазон методу B, синя штрихова куля — відсічене піддерево C, червоний хрестик — документ, який приховав сервер.")}
           </Text>
         </Paper>
       </Grid.Col>
       <Grid.Col md={6}>
         <Stack spacing="sm">
-          <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>Метод перевірки</Text>
+          <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>{t("Verification method", "Метод перевірки")}</Text>
           <Chip.Group value={method} onChange={(v) => setMethod(v as Method)}>
             <Group spacing={6}>
-              {METHOD_OPTIONS.map((m) => <Chip key={m.value} value={m.value}>{m.label}</Chip>)}
+              {methodOptions().map((m) => <Chip key={m.value} value={m.value}>{m.label}</Chip>)}
             </Group>
           </Chip.Group>
-          <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>Поведінка сервера</Text>
+          <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>{t("Server behavior", "Поведінка сервера")}</Text>
           <Chip.Group value={attack} onChange={(v) => setAttack(v as Attack)}>
             <Group spacing={6}>
-              {ATTACK_OPTIONS.map((a) => <Chip key={a.value} value={a.value} color={a.value === "none" ? "green" : "red"}>{a.label}</Chip>)}
+              {attackOptions().map((a) => <Chip key={a.value} value={a.value} color={a.value === "none" ? "green" : "red"}>{a.label}</Chip>)}
             </Group>
           </Chip.Group>
           <SimpleGrid cols={2}>
@@ -190,10 +192,10 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
           <StepList steps={result.steps} />
           <SimpleGrid cols={4} breakpoints={[{ maxWidth: "xs", cols: 2 }]} spacing="xs">
             {[
-              [st.vec, "векторів розкрито"],
-              [st.hashes, "хешів у доказі"],
-              [`${st.kb.toFixed(1)} КБ`, "доказ при d = 384"],
-              [st.dists, "відстаней рахує клієнт"],
+              [st.vec, t("vectors revealed", "векторів розкрито")],
+              [st.hashes, t("hashes in the proof", "хешів у доказі")],
+              [`${st.kb.toFixed(1)} ${t("KB", "КБ")}`, t("proof at d = 384", "доказ при d = 384")],
+              [st.dists, t("distances the client computes", "відстаней рахує клієнт")],
             ].map(([v, l]) => (
               <Paper key={l} withBorder p="xs" radius="md">
                 <Text ff="monospace" fw={500}>{v}</Text>
@@ -205,7 +207,7 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
             const cl = bundle.idx!.clusters[id]
             return (
               <Stack key={id} spacing={4}>
-                <Text fz="xs" c="dimmed" ff="monospace">кластер {id} · {cl.size} листків за зростанням ‖v−c‖</Text>
+                <Text fz="xs" c="dimmed" ff="monospace">{t("cluster", "кластер")} {id} · {cl.size} {t("leaves by increasing ‖v−c‖", "листків за зростанням ‖v−c‖")}</Text>
                 <div className="ap-cells">
                   {cl.members.map((m) => {
                     const cls = bundle.hidden?.id === m.id ? "hid" : resIds.has(m.id) ? "res" : revIds.has(m.id) ? (bounds.has(m.id) ? "bnd" : "rev") : ""

@@ -1,14 +1,15 @@
 import { Badge, Paper, Text } from "@mantine/core"
 import type { StepStatus } from "./sim"
+import { tr } from "../i18n"
 
 export interface StepItem { label: string; status: StepStatus; detail: string }
 
-const STATUS: Record<StepStatus, { color: string; text: string }> = {
-  ok: { color: "green", text: "✓ пройдено" },
-  fail: { color: "red", text: "✗ провалено" },
-  skip: { color: "gray", text: "— не перевіряється" },
-  trust: { color: "yellow", text: "✓ на слово сервера" },
-}
+const statusOf = (): Record<StepStatus, { color: string; text: string }> => ({
+  ok: { color: "green", text: tr("✓ passed", "✓ пройдено") },
+  fail: { color: "red", text: tr("✗ failed", "✗ провалено") },
+  skip: { color: "gray", text: tr("— not checked", "— не перевіряється") },
+  trust: { color: "yellow", text: tr("✓ on the server's word", "✓ на слово сервера") },
+})
 
 export default function StepList({ steps }: { steps: StepItem[] }) {
   return (
@@ -28,7 +29,7 @@ export default function StepList({ steps }: { steps: StepItem[] }) {
         >
           <Text fz="xs" c="dimmed" ff="monospace" pt={2}>{i + 1}</Text>
           <Text fz="sm">{s.label}</Text>
-          <Badge color={STATUS[s.status].color} variant="light" sx={{ flexShrink: 0 }}>{STATUS[s.status].text}</Badge>
+          <Badge color={statusOf()[s.status].color} variant="light" sx={{ flexShrink: 0 }}>{statusOf()[s.status].text}</Badge>
           <Text fz="xs" c="dimmed" ff="monospace" sx={{ gridColumn: "2 / 4", wordBreak: "break-word" }}>{s.detail}</Text>
         </div>
       ))}
