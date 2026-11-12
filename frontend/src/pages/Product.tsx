@@ -102,6 +102,7 @@ export default function Product() {
           <Group spacing="sm">
             <Button size="md" onClick={start}>Спробувати безкоштовно</Button>
             <Button size="md" variant="default" component="a" href="#how">Як це працює</Button>
+            <Button size="md" variant="subtle" color="gray" onClick={() => navigate("/verify")}>Перевірити документ</Button>
           </Group>
           <Text fz="sm" c="dimmed">100 документів на місяць безкоштовно, без банківської картки.</Text>
         </Stack>

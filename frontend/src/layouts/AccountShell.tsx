@@ -95,6 +95,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
                 <NavLink to="/product" className={classes.link}>Продукт</NavLink>
                 <NavLink to="/pricing" className={classes.link}>Тарифи</NavLink>
                 <NavLink to="/account" className={classes.link}>Кабінет</NavLink>
+                <NavLink to="/verify" className={classes.link}>Перевірити</NavLink>
                 <NavLink to="/technology" className={classes.link}>Для розробників</NavLink>
               </Group>
             </Group>

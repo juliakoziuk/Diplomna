@@ -129,7 +129,12 @@ export class AnchorRootDto {
   @ApiProperty({ description: 'Anchored Merkle root (hex).' })
   root: string;
 
-  @ApiProperty({ example: 1762950000, description: 'Unix timestamp (seconds) of anchoring.' })
+  @ApiProperty({
+    example: 1762950000000,
+    description:
+      'Time of anchoring as a Unix timestamp. The demo registry returns milliseconds (Date.now()); ' +
+      'an on-chain registry (block.timestamp) would return seconds, so clients should accept both.',
+  })
   timestamp: number;
 
   @ApiProperty({ description: 'Anchoring transaction hash.' })

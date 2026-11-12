@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { Alert, Badge, Button, Card, Code, Group, Loader, ScrollArea, Stack, Table, Text } from "@mantine/core"
 import { Dropzone } from "@mantine/dropzone"
-import { IconAlertCircle, IconDownload, IconFileUpload, IconShieldCheck } from "@tabler/icons-react"
+import { IconAlertCircle, IconFileUpload, IconReceipt, IconShieldCheck } from "@tabler/icons-react"
 import { hashLeaf, verifyInclusionProof } from "verification-sdk"
 import { AnchorItem, accountApi, formatDateTime } from "../../api/account"
+import ReceiptModal from "./ReceiptModal"
 
 async function sha256Hex(file: File): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer())
@@ -33,21 +34,13 @@ async function verifyReceipt(item: AnchorItem): Promise<Check[]> {
   return checks
 }
 
-function download(item: AnchorItem) {
-  const blob = new Blob([JSON.stringify(item.receipt, null, 2)], { type: "application/json" })
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = `receipt-${item.id}.json`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
-
 export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => void }) {
   const [items, setItems] = useState<AnchorItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [closing, setClosing] = useState(false)
   const [checks, setChecks] = useState<Record<string, Check[]>>({})
+  const [receiptItem, setReceiptItem] = useState<AnchorItem | null>(null)
 
   const load = useCallback(() => {
     accountApi.anchors().then(setItems).catch((e) => setError(e.message))
@@ -153,7 +146,7 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
                             }}>
                             Перевірити
                           </Button>
-                          <Button size="xs" variant="default" leftIcon={<IconDownload size="0.9rem" />} onClick={() => download(item)}>
+                          <Button size="xs" variant="default" leftIcon={<IconReceipt size="0.9rem" />} onClick={() => setReceiptItem(item)}>
                             Квитанція
                           </Button>
                         </Group>
@@ -166,6 +159,7 @@ export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => v
           </ScrollArea>
         )}
       </Card>
+      <ReceiptModal item={receiptItem} onClose={() => setReceiptItem(null)} />
     </Stack>
   )
 }

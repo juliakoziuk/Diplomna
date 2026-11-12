@@ -11,6 +11,7 @@ import Pricing from "./pages/Pricing.tsx"
 import Account from "./pages/Account.tsx"
 import Product from "./pages/Product.tsx"
 import Technology from "./pages/Technology.tsx"
+import Verify from "./pages/Verify.tsx"
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
   {
     path: "/product",
     element: <Product />,
+  },
+  {
+    path: "/verify",
+    element: <Verify />,
   },
   {
     path: "/technology",
