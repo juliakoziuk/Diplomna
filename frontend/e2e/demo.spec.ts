@@ -48,15 +48,16 @@ test("AnchorProof: повний прохід по продукту", async ({ pa
 
   await test.step("Сторінка продукту", async () => {
     await page.goto("/product")
-    await expect(page.getByRole("heading", { name: "Докажіть, що ваш AI нічого не приховав" })).toBeVisible()
-    await shot(page, "Головний екран", "Квитанція пошуку праворуч рахується вживу рушієм демо.")
-    await page.locator("#products").scrollIntoViewIfNeeded()
-    await shot(page, "Продукти", "Anchor API, Verifiable Search і відкритий верифікатор.")
-    await page.locator("#cases").scrollIntoViewIfNeeded()
-    await shot(page, "Для кого", "Сценарії використання з формулюванням «квитанція доводить».")
+    await expect(page.getByRole("heading", { name: /Доведіть, що документ не підмінили/ })).toBeVisible()
+    await shot(page, "Головний екран", "Простою мовою: що робить сервіс і приклад квитанції.")
+    await page.locator("#services").scrollIntoViewIfNeeded()
+    await shot(page, "Послуги", "Печатка часу для документів і пошук із підтвердженою повнотою.")
+    await page.locator("#audience").scrollIntoViewIfNeeded()
+    await shot(page, "Для кого", "Банки, юристи, медицина, закупівлі, автори, AI-компанії.")
   })
 
   await test.step("Демо атак (симуляція)", async () => {
+    await page.goto("/technology")
     await page.locator("#playground").scrollIntoViewIfNeeded()
     await page.locator("canvas.ap-canvas").click({ position: { x: 250, y: 230 } })
     await expect(alertWith(page, "Прийнято")).toBeVisible()

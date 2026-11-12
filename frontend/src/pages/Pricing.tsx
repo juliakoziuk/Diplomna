@@ -66,8 +66,7 @@ export default function Pricing() {
         <Stack spacing={6}>
           <Title order={1}>Тарифи</Title>
           <Text c="dimmed" maw={640}>
-            Платите за записи, а не за блокчейн: газ уже в ціні, а батчинг ділить одну транзакцію в Polygon між
-            тисячами документів. Змінити або скасувати тариф можна в кабінеті будь-коли.
+            Платите за кількість документів, без прихованих комісій. Змінити або скасувати тариф можна в кабінеті будь-коли.
           </Text>
         </Stack>
 
@@ -111,8 +110,8 @@ export default function Pricing() {
                   </Text>
                   <Text fz="sm" c="dimmed">
                     {plan.anchorsPerMonth === null
-                      ? "Без ліміту анкорів"
-                      : `${plan.anchorsPerMonth.toLocaleString("uk-UA")} анкорів на місяць`}
+                      ? "Без ліміту документів"
+                      : `${plan.anchorsPerMonth.toLocaleString("uk-UA")} документів на місяць`}
                   </Text>
                   <List spacing={4} size="sm" icon={<IconCheck size="0.9rem" />} sx={{ flex: 1 }}>
                     {plan.features.map((f) => <List.Item key={f}>{f}</List.Item>)}

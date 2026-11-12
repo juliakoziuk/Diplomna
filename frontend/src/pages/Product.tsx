@@ -1,73 +1,74 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Accordion, Badge, Box, Button, Card, Code, Group, List, Paper, SimpleGrid, Stack, Text, Title,
+  Accordion, Badge, Box, Button, Card, Group, List, SimpleGrid, Stack, Text, ThemeIcon, Title,
 } from "@mantine/core"
-import { IconCheck } from "@tabler/icons-react"
+import {
+  IconBuildingBank, IconCheck, IconFileCheck, IconRobot, IconScale, IconSearch, IconStethoscope, IconUsers, IconPalette,
+} from "@tabler/icons-react"
 import AccountShell from "../layouts/AccountShell"
-import DocumentsTab from "../components/account/DocumentsTab"
-import Playground from "../product/Playground"
-import VerifySection from "../product/VerifySection"
-import Calculator from "../product/Calculator"
-import MethodsSection from "../product/MethodsSection"
-import { dist, serve, short, stats, verify } from "../product/sim"
 import { Plan, billingApi } from "../api/account"
 import { useUserStore } from "../stores/userStore"
 import { useGeneralStore } from "../stores/generalStore"
 import "../product/product.css"
 
-const SECTIONS = [
-  ["products", "Продукти"], ["cases", "Для кого"], ["playground", "Демо"], ["anchor", "Анкорування"],
-  ["verify", "Перевірка"], ["methods", "Методи"], ["pricing", "Тарифи"], ["faq", "FAQ"],
+/**
+ * Marketing landing for non-technical buyers: what the service does, who needs
+ * it and what it costs, in plain words. No cryptography terms here; the
+ * technical side lives on /technology.
+ */
+
+const SITUATIONS = [
+  ["«Ми підписали іншу версію договору»", "Через рік сторони сперечаються, який саме текст було підписано. Квитанція показує, що цей файл існував у цей день і відтоді не змінювався."],
+  ["«Покажіть, що пошук був повним»", "Аудитор чи регулятор питає: система справді перевірила всі записи? Ми підтверджуємо, що жоден збіг не було приховано."],
+  ["«Хтось виправив журнал заднім числом»", "Звіти й журнали можна змінити непомітно. Зафіксований файл непомітно змінити неможливо: будь-яка правка одразу видна."],
+]
+
+const STEPS = [
+  ["1", "Ви надсилаєте «відбиток» файлу", "Сам документ нікуди не передається. З нього на вашому комп'ютері рахується короткий код, і лише він іде до нас."],
+  ["2", "Ми записуємо його в публічний реєстр", "Код потрапляє в незалежний реєстр, де його вже не можна змінити чи видалити. Навіть нам."],
+  ["3", "Ви отримуєте квитанцію", "Її можна перевірити будь-коли без нашої участі. Якщо файл змінили хоч на один символ, перевірка це покаже."],
+]
+
+const AUDIENCE = [
+  [IconBuildingBank, "Банки й фінтех", "Перевірка клієнтів за санкційними списками", "Покажіть регулятору, що жоден збіг не пропущено і перевірка йшла за актуальним списком."],
+  [IconScale, "Юридичні фірми", "Пошук по судовій практиці й матеріалах справи", "Доведіть клієнту чи суду, що нічого важливого не втаїли і не відфільтрували."],
+  [IconStethoscope, "Медицина і фарма", "Клінічні настанови й протоколи", "Рекомендація спиралась на чинну редакцію, а не на застарілу."],
+  [IconUsers, "Закупівлі та HR", "Відбір пропозицій і кандидатів", "Нікого не прибрали з видачі вручну, тож спірне рішення можна перевірити."],
+  [IconPalette, "Автори й дизайнери", "Захист авторства", "Підтвердіть, що ваша робота вже існувала на певну дату."],
+  [IconRobot, "Компанії з AI", "Журнал для відповідності вимогам", "Підтвердіть, що записи про роботу AI не редагували після події."],
 ] as const
 
-const USE_CASES = [
-  ["Санкційний і AML-скринінг", "Перевірка контрагента за списками", "пошук ішов по актуальній версії списку, і жоден близький збіг не відфільтровано."],
-  ["Legaltech", "RAG по судовій практиці", "жодне релевантніше рішення не випало з вибірки, і це можна показати клієнту чи суду."],
-  ["Медицина і фарма", "Клінічні настанови", "відповідь спиралась на поточну редакцію настанов, а не на застарілу."],
-  ["Закупівлі та HR", "Відбір пропозицій і кандидатів", "нікого не прибрали з видачі вручну, тож спірне рішення можна перевірити."],
-  ["Аудит AI-систем", "Журнал для відповідності", "журнал запитів і джерел не редагували після події."],
-  ["Автори, юристи, розробники", "Доказ існування документа", "файл існував саме в цьому вигляді на дату епохи."],
-]
-
 const FAQ = [
-  ["Чи потрапляють мої дані в блокчейн?", "Ні. У Polygon записується лише 32-байтовий корінь дерева Меркла і номер версії. Документи й вектори залишаються у вашому сховищі, а для фіксації файлу на сервер іде лише його SHA-256."],
-  ["Це гарантує, що знайдено точних k найближчих?", "Гарантія діє відносно параметра nprobe: серед перевірених кластерів нічого не пропущено, а самі кластери обрано чесно. Для точного пошуку можна поставити nprobe рівним кількості кластерів."],
-  ["Кому тут треба довіряти?", "Власник даних будує індекс і підписує анкор своїм ключем. Серверу, що відповідає на запити, довіряти не потрібно. Для Enterprise ключ індексатора можна зробити multisig."],
-  ["Наскільки це сповільнює пошук?", "Сервер додатково збирає доказ, клієнт перераховує кілька десятків відстаней і хешів, це мілісекунди. Основна ціна — розмір доказу, тому використовується кільцевий метод."],
-  ["Що буде, якщо AnchorProof зникне?", "Квитанції продовжать перевірятися: верифікатор відкритий, а корені лежать у публічному контракті."],
+  ["Хтось побачить мої документи?", "Ні. Документ не залишає ваш комп'ютер. До нас іде лише короткий код, з якого відновити файл неможливо."],
+  ["Чи має квитанція юридичну силу?", "Це надійний технічний доказ того, що файл існував у такому вигляді в певну дату. Чи прийме його конкретний суд чи регулятор, залежить від країни та справи. Уточніть це в юриста, перш ніж покладатися на нього."],
+  ["Що буде, якщо ваша компанія зникне?", "Квитанції продовжать перевірятися: перевірка відкрита для всіх, а записи лежать у публічному реєстрі, який від нас не залежить."],
+  ["Чи потрібен програміст?", "Для разової фіксації ні: достатньо перетягнути файл у кабінеті. Для автоматизації є API, його описано на сторінці «Для розробників»."],
+  ["Скільки це коштує?", "Є безкоштовний тариф без картки. Платні тарифи для більших обсягів і для перевіреного пошуку наведено нижче."],
 ]
 
-function HeroReceipt() {
-  const r = useMemo(() => {
-    const q = { x: 0.44, y: 0.47 }
-    const b = serve(q, 4, 2, "B", "none")
-    return { q, b, ok: verify(b, q, 4).accepted, kb: stats(b).kb }
-  }, [])
+function SampleCertificate() {
+  const today = new Date().toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })
   const row = (a: string, c: string) => <div className="row" key={a}><span>{a}</span><span>{c}</span></div>
   return (
-    <div className="ap-receipt" aria-label="Приклад квитанції пошуку">
-      <div className="rh">КВИТАНЦІЯ ПОШУКУ</div>
-      {row("запит", "q = (0.44, 0.47)")}
-      {row("k / nprobe", "4 / 2 з 6")}
+    <div className="ap-receipt" aria-label="Приклад квитанції">
+      <div className="rh">КВИТАНЦІЯ · ПРИКЛАД</div>
+      {row("Файл", "договір_постачання.pdf")}
+      {row("Зафіксовано", today)}
       <hr />
-      {r.b.results.map((x, i) => row(`${i + 1}. ${x.id}`, `d = ${dist(r.q, x).toFixed(3)}`))}
-      <hr />
-      {row("метод", "кільцевий діапазон")}
-      {row("доказ", `${r.kb.toFixed(1)} КБ`)}
-      {row("globalRoot", short(r.b.root))}
-      {row("версія індексу", `v${r.b.version} · latest`)}
-      {row("мережа", "Polygon (демо)")}
-      <div className="stamp">{r.ok ? "ПОВНОТУ ПІДТВЕРДЖЕНО" : "ВІДХИЛЕНО"}</div>
+      {row("Змінювався з того часу?", "Ні")}
+      {row("Хто може перевірити", "Будь-хто")}
+      {row("Потрібна наша участь", "Ні")}
+      <div className="stamp">НЕ ЗМІНЮВАЛИ</div>
     </div>
   )
 }
 
 function Section({ id, eyebrow, title, lede, children }: { id: string; eyebrow: string; title: string; lede?: string; children: React.ReactNode }) {
   return (
-    <Box component="section" id={id} pt={56} sx={{ scrollMarginTop: 72 }}>
+    <Box component="section" id={id} pt={64} sx={{ scrollMarginTop: 72 }}>
       <Stack spacing={6} mb="lg">
-        <Text fz="xs" tt="uppercase" c="dimmed" fw={600} ff="monospace" sx={{ letterSpacing: "0.08em" }}>{eyebrow}</Text>
+        <Text fz="xs" tt="uppercase" c="dimmed" fw={600} sx={{ letterSpacing: "0.08em" }}>{eyebrow}</Text>
         <Title order={2}>{title}</Title>
         {lede && <Text c="dimmed" maw={720}>{lede}</Text>}
       </Stack>
@@ -80,142 +81,130 @@ export default function Product() {
   const navigate = useNavigate()
   const userId = useUserStore((s) => s.id)
   const toggleLogin = useGeneralStore((s) => s.toggleLoginModal)
-  const [params, setParams] = useState({ k: 4, nprobe: 2 })
-  const [receiptText, setReceiptText] = useState("")
   const [plans, setPlans] = useState<Plan[] | null>(null)
-  const verifyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { billingApi.plans().then(setPlans).catch(() => setPlans([])) }, [])
 
-  const onParams = useCallback((k: number, nprobe: number) => setParams({ k, nprobe }), [])
-  const sendToVerifier = useCallback((json: string) => {
-    setReceiptText(json)
-    document.getElementById("verify")?.scrollIntoView({ behavior: "smooth" })
-  }, [])
+  const start = () => (userId ? navigate("/account") : toggleLogin())
 
   return (
     <AccountShell>
-      <Group spacing={4} mb="md" sx={{ overflowX: "auto", flexWrap: "nowrap" }}>
-        {SECTIONS.map(([id, label]) => (
-          <Button key={id} component="a" href={`#${id}`} variant="subtle" color="gray" size="xs">{label}</Button>
-        ))}
-      </Group>
-
-      <SimpleGrid cols={2} spacing={48} breakpoints={[{ maxWidth: "md", cols: 1 }]} sx={{ alignItems: "center" }} py="lg">
+      <SimpleGrid cols={2} spacing={48} breakpoints={[{ maxWidth: "md", cols: 1 }]} sx={{ alignItems: "center" }} py="xl">
         <Stack spacing="lg">
-          <Text fz="xs" tt="uppercase" c="dimmed" fw={600} ff="monospace">Перевірюваний пошук для AI-систем</Text>
-          <Title order={1} sx={{ fontSize: "clamp(2rem, 4.4vw, 3rem)", lineHeight: 1.15 }}>Докажіть, що ваш AI нічого не приховав</Title>
+          <Text fz="xs" tt="uppercase" c="dimmed" fw={600} sx={{ letterSpacing: "0.08em" }}>Для бізнесу, юристів і аудиторів</Text>
+          <Title order={1} sx={{ fontSize: "clamp(2rem, 4.4vw, 3rem)", lineHeight: 1.15 }}>
+            Доведіть, що документ не підмінили, а пошук нічого не приховав
+          </Title>
           <Text fz="lg" c="dimmed">
-            AnchorProof додає до кожної відповіді RAG-системи криптографічну квитанцію: з яких документів зібрано відповідь,
-            що жоден релевантніший документ не пропущено і що індекс не підмінили заднім числом. Корінь індексу фіксується
-            в мережі Polygon, тому квитанцію може перевірити будь-хто.
+            AnchorProof видає квитанцію, яку може перевірити будь-хто: клієнт, аудитор чи суд. Без нашої участі
+            і без довіри до вашої ІТ-служби.
           </Text>
           <Group spacing="sm">
-            <Button component="a" href="#playground">Спробувати демо</Button>
-            <Button variant="default" component="a" href="#anchor">Зафіксувати документ</Button>
-            <Button variant="default" onClick={() => navigate("/pricing")}>Тарифи</Button>
+            <Button size="md" onClick={start}>Спробувати безкоштовно</Button>
+            <Button size="md" variant="default" component="a" href="#how">Як це працює</Button>
           </Group>
+          <Text fz="sm" c="dimmed">100 документів на місяць безкоштовно, без банківської картки.</Text>
         </Stack>
-        <Group position="center"><HeroReceipt /></Group>
+        <Group position="center"><SampleCertificate /></Group>
       </SimpleGrid>
 
-      <Section id="products" eyebrow="Продукти" title="Два сервіси на одному рушії"
-        lede="Почніть з фіксації хешів, а коли будуватимете AI-пошук, додайте квитанції повноти. Перевірка квитанцій відкрита для всіх.">
+      <Section id="problems" eyebrow="Знайомі ситуації" title="Навіщо це потрібно">
         <SimpleGrid cols={3} breakpoints={[{ maxWidth: "md", cols: 1 }]}>
-          {[
-            ["Anchor API · доступно зараз", "Фіксація документів у Polygon", "SHA-256 файлу, логу чи датасету батчується в дерево Меркла, у блокчейн іде один корінь на епоху.", "цей документ існував у такому вигляді не пізніше цієї епохи.", "#1c7ed6"],
-            ["Verifiable Search · для RAG", "Квитанції повноти пошуку", "Проксі перед pgvector, Qdrant чи Pinecone: автентифікований IVF-індекс і кільцевий доказ повноти до кожної відповіді.", "результати справжні, кластери обрано чесно, нічого не приховано, індекс актуальний.", "#d9480f"],
-            ["Відкритий верифікатор · MIT", "Перевірка без довіри до нас", "Бібліотека verification-sdk і сторінка перевірки: клієнт, аудитор чи регулятор перевіряє квитанцію сам.", "гарантія не залежить від репутації постачальника.", "#868e96"],
-          ].map(([tag, title, text, proves, color]) => (
-            <Card key={title} withBorder padding="lg" sx={{ borderTop: `3px solid ${color}` }}>
-              <Stack spacing="xs">
-                <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>{tag}</Text>
+          {SITUATIONS.map(([title, text]) => (
+            <Card key={title} withBorder padding="lg">
+              <Stack spacing={8}>
                 <Title order={4}>{title}</Title>
                 <Text fz="sm" c="dimmed">{text}</Text>
-                <Text fz="sm"><Text span fz="xs" tt="uppercase" c="orange" fw={600}>Квитанція доводить: </Text>{proves}</Text>
               </Stack>
             </Card>
           ))}
         </SimpleGrid>
       </Section>
 
-      <Section id="cases" eyebrow="Для кого" title="Там, де пропущений документ коштує дорого">
-        <SimpleGrid cols={3} breakpoints={[{ maxWidth: "md", cols: 2 }, { maxWidth: "xs", cols: 1 }]}>
-          {USE_CASES.map(([tag, title, proves]) => (
-            <Card key={title} withBorder padding="lg">
-              <Stack spacing={6}>
-                <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>{tag}</Text>
-                <Title order={5}>{title}</Title>
-                <Text fz="sm"><Text span fz="xs" tt="uppercase" c="orange" fw={600}>Квитанція доводить: </Text>{proves}</Text>
-              </Stack>
-            </Card>
-          ))}
-        </SimpleGrid>
-      </Section>
-
-      <Section id="playground" eyebrow="Демо · Verifiable Search" title="Спробуйте обманути клієнта"
-        lede="Наочна 2D-симуляція у браузері: 150 документів, 6 IVF-кластерів, справжні дерева Меркла і справжня перевірка. Метод B працює і на справжньому бекенді: сторінка «Демо пошуку» в меню.">
-        <Playground onParams={onParams} onSendReceipt={sendToVerifier} />
-      </Section>
-
-      <Section id="anchor" eyebrow="Anchor API" title="Зафіксуйте документ"
-        lede="Файл не покидає браузер: на сервер іде лише SHA-256. Хеш потрапляє в батч, після закриття епохи ви отримуєте квитанцію з доказом Меркла.">
-        {userId ? (
-          <Stack spacing="lg">
-            <DocumentsTab onUsageChange={() => undefined} />
-            <Calculator />
-          </Stack>
-        ) : (
-          <Stack spacing="lg">
-            <Paper withBorder p="lg" radius="md">
-              <Group position="apart">
-                <Stack spacing={4}>
-                  <Text fw={600}>Увійдіть, щоб фіксувати документи</Text>
-                  <Text fz="sm" c="dimmed">Тариф Free дає 100 анкорів на місяць без картки.</Text>
-                </Stack>
-                <Button onClick={toggleLogin}>Увійти або зареєструватись</Button>
+      <Section id="services" eyebrow="Послуги" title="Два сервіси: для документів і для пошуку">
+        <SimpleGrid cols={2} breakpoints={[{ maxWidth: "md", cols: 1 }]}>
+          <Card withBorder padding="lg" sx={{ borderTop: "3px solid #1c7ed6" }}>
+            <Stack spacing="sm">
+              <Group spacing="sm">
+                <ThemeIcon size="lg" variant="light" color="blue"><IconFileCheck size="1.2rem" /></ThemeIcon>
+                <Badge variant="light">Доступно зараз</Badge>
               </Group>
-            </Paper>
-            <Calculator />
-          </Stack>
-        )}
+              <Title order={3}>Печатка часу для документів</Title>
+              <Text c="dimmed">Фіксуйте договори, акти, звіти, креслення чи авторські роботи й отримуйте квитанцію.</Text>
+              <List size="sm" spacing={4} icon={<IconCheck size="0.9rem" />}>
+                <List.Item>Доводить, що файл існував у такому вигляді не пізніше певної дати</List.Item>
+                <List.Item>Показує, якщо файл хтось змінив</List.Item>
+                <List.Item>Працює з кабінету або автоматично через API</List.Item>
+              </List>
+              <Button variant="light" onClick={start}>Зафіксувати документ</Button>
+            </Stack>
+          </Card>
+          <Card withBorder padding="lg" sx={{ borderTop: "3px solid #d9480f" }}>
+            <Stack spacing="sm">
+              <Group spacing="sm">
+                <ThemeIcon size="lg" variant="light" color="orange"><IconSearch size="1.2rem" /></ThemeIcon>
+                <Badge variant="light" color="orange">Під замовлення</Badge>
+              </Group>
+              <Title order={3}>Пошук із підтвердженою повнотою</Title>
+              <Text c="dimmed">Для систем, що шукають по вашій базі: клієнтів, списків, судової практики, настанов.</Text>
+              <List size="sm" spacing={4} icon={<IconCheck size="0.9rem" />}>
+                <List.Item>До кожної відповіді додається підтвердження «нічого не пропущено»</List.Item>
+                <List.Item>Показує, що база була актуальною, а не старою версією</List.Item>
+                <List.Item>Перевірити підтвердження може сторонній аудитор</List.Item>
+              </List>
+              <Button variant="light" color="orange" onClick={() => navigate("/technology")}>Подивитись демо</Button>
+            </Stack>
+          </Card>
+        </SimpleGrid>
       </Section>
 
-      <Section id="verify" eyebrow="Відкритий верифікатор" title="Перевірте квитанцію"
-        lede="Підтримуються квитанції документів з кабінету, відповіді реального пошуку /verifiable-search і квитанції з демо.">
-        <div ref={verifyRef}><VerifySection text={receiptText} onText={setReceiptText} /></div>
+      <Section id="how" eyebrow="Як це працює" title="Три кроки"
+        lede="Технічну криптографію ви не побачите: все, що потрібно, це файл і кілька секунд.">
+        <SimpleGrid cols={3} breakpoints={[{ maxWidth: "md", cols: 1 }]}>
+          {STEPS.map(([n, title, text]) => (
+            <Stack key={n} spacing={8}>
+              <ThemeIcon size={36} radius="xl" variant="filled" color="orange"><Text fw={700}>{n}</Text></ThemeIcon>
+              <Title order={4}>{title}</Title>
+              <Text fz="sm" c="dimmed">{text}</Text>
+            </Stack>
+          ))}
+        </SimpleGrid>
       </Section>
 
-      <Section id="methods" eyebrow="Під капотом" title="Чотири методи довести повноту"
-        lede="Усі методи гарантують повноту відносно nprobe. Цифри рахуються на тих самих даних, що й демо, з його поточними k і nprobe.">
-        <MethodsSection k={params.k} nprobe={params.nprobe} />
+      <Section id="audience" eyebrow="Для кого" title="Там, де помилка або підміна коштує дорого">
+        <SimpleGrid cols={3} breakpoints={[{ maxWidth: "md", cols: 2 }, { maxWidth: "xs", cols: 1 }]}>
+          {AUDIENCE.map(([Icon, who, title, text]) => (
+            <Card key={who} withBorder padding="lg">
+              <Stack spacing={8}>
+                <Group spacing="xs">
+                  <ThemeIcon variant="light" color="gray"><Icon size="1.1rem" /></ThemeIcon>
+                  <Text fz="xs" tt="uppercase" c="dimmed" fw={600}>{who}</Text>
+                </Group>
+                <Title order={5}>{title}</Title>
+                <Text fz="sm" c="dimmed">{text}</Text>
+              </Stack>
+            </Card>
+          ))}
+        </SimpleGrid>
       </Section>
 
-      <Section id="pricing" eyebrow="Тарифи" title="Платите за записи, а не за блокчейн"
-        lede="Газ уже в ціні: батчинг ділить одну транзакцію між тисячами записів.">
+      <Section id="pricing" eyebrow="Тарифи" title="Прозорі тарифи" lede="Платите за кількість документів. Ніяких прихованих комісій.">
         <SimpleGrid cols={4} breakpoints={[{ maxWidth: "md", cols: 2 }, { maxWidth: "xs", cols: 1 }]}>
           {(plans ?? []).map((p) => (
             <Card key={p.id} withBorder padding="lg" sx={(t) => ({ display: "flex", flexDirection: "column", gap: t.spacing.xs, borderColor: p.id === "search" ? t.colors.orange[6] : undefined })}>
-              <Group position="apart"><Text fw={600}>{p.name}</Text>{p.id === "search" && <Badge>для RAG</Badge>}</Group>
+              <Group position="apart"><Text fw={600}>{p.name}</Text>{p.id === "search" && <Badge>для пошуку</Badge>}</Group>
               <Text fz={26} fw={600}>${p.priceUsd}<Text span fz="sm" c="dimmed" fw={400}> / міс</Text></Text>
+              <Text fz="sm" c="dimmed">{p.anchorsPerMonth === null ? "Без ліміту документів" : `${p.anchorsPerMonth.toLocaleString("uk-UA")} документів на місяць`}</Text>
               <List spacing={3} size="sm" icon={<IconCheck size="0.9rem" />} sx={{ flex: 1 }}>
                 {p.features.map((f) => <List.Item key={f}>{f}</List.Item>)}
               </List>
               <Button variant={p.id === "search" ? "filled" : "light"} onClick={() => navigate("/pricing")}>
-                {p.priceUsd === 0 ? "Почати" : "Оформити"}
+                {p.priceUsd === 0 ? "Почати безкоштовно" : "Обрати"}
               </Button>
             </Card>
           ))}
         </SimpleGrid>
-        {plans?.length === 0 && <Text c="dimmed">Тарифи недоступні: бекенд не відповідає.</Text>}
-        <Paper withBorder p="lg" radius="md" mt="lg">
-          <Text fw={600} mb="xs">Інтеграція через API</Text>
-          <Code block>{`curl -X POST http://localhost:3000/v1/anchor \\
-  -H "Authorization: Bearer ap_test_…" \\
-  -H "Content-Type: application/json" \\
-  -d '{"sha256":"<64 hex>","label":"contract.pdf"}'`}</Code>
-          <Text fz="xs" c="dimmed" mt="xs">Ключ створюється в кабінеті, вкладка «API-ключі».</Text>
-        </Paper>
+        {plans?.length === 0 && <Text c="dimmed">Тарифи тимчасово недоступні.</Text>}
       </Section>
 
       <Section id="faq" eyebrow="Питання" title="Часті питання">
@@ -229,9 +218,17 @@ export default function Product() {
         </Accordion>
       </Section>
 
-      <Text fz="xs" c="dimmed" mt={48} pt="md" sx={(t) => ({ borderTop: `1px solid ${t.colors.gray[3]}` })}>
-        AnchorProof — прототип, що виріс із магістерської роботи. Демо пошуку є симуляцією у браузері; анкорування поки працює
-        на mock-реєстрі бекенда, смарт-контракт ще не розгорнуто в Polygon. Ціни орієнтовні.
+      <Card withBorder padding="xl" mt={64} sx={{ textAlign: "center" }}>
+        <Stack spacing="md" align="center">
+          <Title order={3}>Почніть з одного документа</Title>
+          <Text c="dimmed" maw={520}>Зареєструйтесь, перетягніть файл і за кілька секунд отримайте квитанцію. Банківська картка не потрібна.</Text>
+          <Button size="md" onClick={start}>Спробувати безкоштовно</Button>
+        </Stack>
+      </Card>
+
+      <Text fz="xs" c="dimmed" mt={48} pt="md" sx={(t) => ({ borderTop: `1px solid ${t.colorScheme === "dark" ? t.colors.dark[4] : t.colors.gray[3]}` })}>
+        AnchorProof — навчальний прототип. У цій версії публічний реєстр імітується; перед реальним використанням
+        його підключають до справжньої мережі. Ціни орієнтовні.
       </Text>
     </AccountShell>
   )

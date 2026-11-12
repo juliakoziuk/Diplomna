@@ -32,6 +32,8 @@ export const useGeneralStore = create<GeneralState>()(
     }),
     {
       name: "general-store",
+      // Only transient UI flags live here: a modal must not reopen after a reload.
+      partialize: () => ({}),
     }
   )
 )

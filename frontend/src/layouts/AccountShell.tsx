@@ -1,6 +1,7 @@
 import React, { useEffect } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
-import { Box, Button, Container, Group, MantineProvider, Text, createStyles, rem } from "@mantine/core"
+import { ActionIcon, Box, Button, Container, Group, MantineProvider, Text, Tooltip, createStyles, rem, useMantineColorScheme } from "@mantine/core"
+import { IconMoon, IconSun } from "@tabler/icons-react"
 import AuthOverlay from "../components/AuthOverlay"
 import { useUserStore } from "../stores/userStore"
 import { useGeneralStore } from "../stores/generalStore"
@@ -12,13 +13,13 @@ const useStyles = createStyles((theme) => ({
     position: "sticky",
     top: 0,
     zIndex: 50,
-    background: theme.white,
-    borderBottom: `1px solid ${theme.colors.gray[3]}`,
+    background: theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
+    borderBottom: `1px solid ${theme.colorScheme === "dark" ? theme.colors.dark[4] : theme.colors.gray[3]}`,
   },
   logo: {
     fontWeight: 700,
     fontSize: rem(18),
-    color: theme.black,
+    color: theme.colorScheme === "dark" ? theme.colors.dark[0] : theme.black,
     textDecoration: "none",
     display: "flex",
     alignItems: "center",
@@ -31,13 +32,17 @@ const useStyles = createStyles((theme) => ({
     borderRadius: rem(3),
   },
   link: {
-    color: theme.colors.gray[7],
+    color: theme.colorScheme === "dark" ? theme.colors.dark[1] : theme.colors.gray[7],
     textDecoration: "none",
     fontSize: theme.fontSizes.sm,
     padding: `${rem(6)} ${rem(10)}`,
     borderRadius: theme.radius.sm,
-    "&:hover": { background: theme.colors.gray[1] },
-    "&.active": { color: theme.colors.orange[8], background: theme.colors.orange[0], fontWeight: 600 },
+    "&:hover": { background: theme.colorScheme === "dark" ? theme.colors.dark[5] : theme.colors.gray[1] },
+    "&.active": {
+      color: theme.colorScheme === "dark" ? theme.colors.orange[4] : theme.colors.orange[8],
+      background: theme.colorScheme === "dark" ? "rgba(247, 103, 7, 0.16)" : theme.colors.orange[0],
+      fontWeight: 600,
+    },
   },
 }))
 
@@ -65,6 +70,8 @@ export default function AccountShell({ children }: { children: React.ReactNode }
   const navigate = useNavigate()
   const user = useUserStore((s) => s)
   const toggleLogin = useGeneralStore((s) => s.toggleLoginModal)
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
+  const dark = colorScheme === "dark"
 
   const handleLogout = async () => {
     await authApi.logout().catch(() => undefined)
@@ -88,17 +95,24 @@ export default function AccountShell({ children }: { children: React.ReactNode }
                 <NavLink to="/product" className={classes.link}>Продукт</NavLink>
                 <NavLink to="/pricing" className={classes.link}>Тарифи</NavLink>
                 <NavLink to="/account" className={classes.link}>Кабінет</NavLink>
-                <NavLink to="/verifiable-search" className={classes.link}>Демо пошуку</NavLink>
+                <NavLink to="/technology" className={classes.link}>Для розробників</NavLink>
               </Group>
             </Group>
-            {user.id ? (
-              <Group spacing="xs" noWrap>
-                <Text size="sm" c="dimmed" truncate maw={180}>{user.fullname}</Text>
-                <Button variant="subtle" color="gray" size="xs" onClick={handleLogout}>Вийти</Button>
-              </Group>
-            ) : (
-              <Button size="xs" onClick={toggleLogin}>Увійти</Button>
-            )}
+            <Group spacing="xs" noWrap>
+              <Tooltip label={dark ? "Світла тема" : "Темна тема"} withArrow>
+                <ActionIcon variant="default" size="md" onClick={() => toggleColorScheme()} aria-label={dark ? "Увімкнути світлу тему" : "Увімкнути темну тему"}>
+                  {dark ? <IconSun size="1rem" /> : <IconMoon size="1rem" />}
+                </ActionIcon>
+              </Tooltip>
+              {user.id ? (
+                <>
+                  <Text size="sm" c="dimmed" truncate maw={180}>{user.fullname}</Text>
+                  <Button variant="subtle" color="gray" size="xs" onClick={handleLogout}>Вийти</Button>
+                </>
+              ) : (
+                <Button size="xs" onClick={toggleLogin}>Увійти</Button>
+              )}
+            </Group>
           </Group>
         </Container>
       </Box>

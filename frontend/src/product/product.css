@@ -1,19 +1,47 @@
+/* Theme variables: ThemeProvider sets data-theme on <html>. The receipt stays light on purpose: it is a paper slip. */
+:root {
+  --ap-canvas-bg: #f4f6f3;
+  --ap-cell: #e7ece6;
+  --ap-cell-rev: #fbe3c7;
+  --ap-cell-bnd: #fff;
+  --ap-accent: #d9480f;
+  --ap-bad: #c92a2a;
+  --ap-bar-track: #edf0ec;
+  --ap-border: #e9ecef;
+  --ap-rec-row: #fff4e6;
+  --ap-bar-muted: #adb5bd;
+  --ap-bar-chain: #3c4e8a;
+}
+[data-theme="dark"] {
+  --ap-canvas-bg: #1a1c20;
+  --ap-cell: #2c2e33;
+  --ap-cell-rev: rgba(247, 103, 7, 0.28);
+  --ap-cell-bnd: transparent;
+  --ap-accent: #f76707;
+  --ap-bad: #ff6b6b;
+  --ap-bar-track: #2c2e33;
+  --ap-border: #373a40;
+  --ap-rec-row: rgba(247, 103, 7, 0.14);
+  --ap-bar-muted: #6c7480;
+  --ap-bar-chain: #8ea2e6;
+}
+
 .ap-canvas {
   width: 100%;
   aspect-ratio: 1 / 1;
   display: block;
   border-radius: 8px;
-  background: #f4f6f3;
+  background: var(--ap-canvas-bg);
   cursor: crosshair;
   touch-action: manipulation;
 }
 
 .ap-cells { display: flex; flex-wrap: wrap; gap: 2px; }
-.ap-cell { width: 12px; height: 17px; border-radius: 2px; background: #e7ece6; border: 1px solid transparent; display: inline-block; }
-.ap-cell.rev { background: #fbe3c7; border-color: #d9480f; }
-.ap-cell.bnd { background: #fff; border: 1px dashed #d9480f; }
-.ap-cell.res { background: #d9480f; }
-.ap-cell.hid { background: #c92a2a; }
+.ap-cell { width: 12px; height: 17px; border-radius: 2px; background: var(--ap-cell); border: 1px solid transparent; display: inline-block; }
+.ap-cell.rev { background: var(--ap-cell-rev); border-color: var(--ap-accent); }
+.ap-cell.bnd { background: var(--ap-cell-bnd); border: 1px dashed var(--ap-accent); }
+.ap-cell.res { background: var(--ap-accent); }
+.ap-cell.hid { background: var(--ap-bad); }
 
 .ap-receipt {
   background: #fbfaf6;
@@ -46,7 +74,7 @@
 .ap-receipt hr { border: none; border-top: 1px dashed #9aa0a6; margin: 8px 0; }
 .ap-receipt .stamp { margin-top: 10px; text-align: center; font-weight: 500; color: #2c7a4c; border: 2px solid #2c7a4c; border-radius: 4px; padding: 4px; letter-spacing: 0.1em; }
 
-.ap-bar-track { position: relative; height: 24px; background: #edf0ec; border-radius: 4px; }
+.ap-bar-track { position: relative; height: 24px; background: var(--ap-bar-track); border-radius: 4px; }
 .ap-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
 .ap-bar-val { position: absolute; top: 50%; transform: translateY(-50%); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
 

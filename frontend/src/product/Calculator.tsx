@@ -48,7 +48,7 @@ export default function Calculator() {
                   const txm = m.tx * 30
                   const cost = txm * m.gas * (Number(gwei) || 0) * 1e-9 * (Number(pol) || 0)
                   return (
-                    <tr key={m.name} style={m.rec ? { background: "#fff4e6" } : undefined}>
+                    <tr key={m.name} style={m.rec ? { background: "var(--ap-rec-row)" } : undefined}>
                       <td><Text fz="sm" fw={600}>{m.name}</Text></td>
                       <td><Text fz="sm" ff="monospace">{Math.round(txm).toLocaleString("uk-UA")}</Text></td>
                       <td><Text fz="sm" ff="monospace">{usd(cost)}</Text></td>

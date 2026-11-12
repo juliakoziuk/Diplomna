@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Alert, Button, Chip, Grid, Group, Paper, SimpleGrid, Slider, Stack, Text } from "@mantine/core"
 import StepList from "./StepList"
+import { useIsDark } from "../theme/ThemeProvider"
 import {
   Attack, Bundle, Method, Pt, dist, forEachBall, revealedIds, serve, stats, toReceipt, verify,
 } from "./sim"
 
-const CLUSTER_COLORS = ["#3f76a3", "#6e9440", "#a5673f", "#6b58a6", "#2f8a82", "#a64f7c"]
-const ACCENT = "#d9480f", INK = "#17212b", MUTED = "#8a95a0", BAD = "#c92a2a", CHAIN = "#3c4e8a"
+const PALETTES = {
+  light: {
+    clusters: ["#3f76a3", "#6e9440", "#a5673f", "#6b58a6", "#2f8a82", "#a64f7c"],
+    accent: "#d9480f", ink: "#17212b", muted: "#8a95a0", bad: "#c92a2a", chain: "#3c4e8a",
+  },
+  dark: {
+    clusters: ["#6aa5d4", "#8fc15a", "#d49467", "#9a87d6", "#52bfb4", "#d77fae"],
+    accent: "#f76707", ink: "#e9ecef", muted: "#7d8590", bad: "#ff6b6b", chain: "#8ea2e6",
+  },
+}
+type Palette = (typeof PALETTES)["light"]
 
 const METHOD_OPTIONS: { value: Method; label: string; hint: string }[] = [
   { value: "V0", label: "Лише включення", hint: "типова реалізація" },
@@ -28,7 +38,8 @@ const ATTACK_TEXT: Record<Exclude<Attack, "none">, string> = {
   rollback: "відповів зі старого індексу v1",
 }
 
-function draw(canvas: HTMLCanvasElement, b: Bundle, q: Pt) {
+function draw(canvas: HTMLCanvasElement, b: Bundle, q: Pt, pal: Palette) {
+  const { clusters: CLUSTER_COLORS, accent: ACCENT, ink: INK, muted: MUTED, bad: BAD, chain: CHAIN } = pal
   const ctx = canvas.getContext("2d")!
   const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth || 600
   canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * dpr)
@@ -96,6 +107,7 @@ interface Props {
 
 export default function Playground({ onParams, onSendReceipt }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const dark = useIsDark()
   const [q, setQ] = useState<Pt>({ x: 0.44, y: 0.47 })
   const [k, setK] = useState(4)
   const [nprobe, setNprobe] = useState(2)
@@ -107,11 +119,12 @@ export default function Playground({ onParams, onSendReceipt }: Props) {
   const st = useMemo(() => stats(bundle), [bundle])
 
   useEffect(() => {
-    const redraw = () => canvasRef.current && draw(canvasRef.current, bundle, q)
+    const pal = dark ? PALETTES.dark : PALETTES.light
+    const redraw = () => canvasRef.current && draw(canvasRef.current, bundle, q, pal)
     redraw()
     window.addEventListener("resize", redraw)
     return () => window.removeEventListener("resize", redraw)
-  }, [bundle, q])
+  }, [bundle, q, dark])
 
   useEffect(() => onParams(k, nprobe), [k, nprobe, onParams])
 

@@ -23,7 +23,7 @@ export default function StepList({ steps }: { steps: StepItem[] }) {
             rowGap: 2,
             alignItems: "start",
             padding: "8px 16px",
-            borderTop: i ? "1px solid #e9ecef" : undefined,
+            borderTop: i ? "1px solid var(--ap-border)" : undefined,
           }}
         >
           <Text fz="xs" c="dimmed" ff="monospace" pt={2}>{i + 1}</Text>

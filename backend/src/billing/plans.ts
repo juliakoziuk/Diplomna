@@ -19,7 +19,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceUsd: 0,
     anchorsPerMonth: 100,
     priceEnv: null,
-    features: ['100 анкорів на місяць', 'Спільний батч', 'Відкритий верифікатор'],
+    features: ['Квитанція на кожен документ', 'Перевірка квитанцій безкоштовна', 'Без банківської картки'],
   },
   pro: {
     id: 'pro',
@@ -27,7 +27,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceUsd: 49,
     anchorsPerMonth: 50_000,
     priceEnv: 'STRIPE_PRICE_PRO',
-    features: ['До 50 000 анкорів', 'API-ключі', 'Квитанції в кабінеті'],
+    features: ['Підключення через API', 'Квитанції в особистому кабінеті', 'Ключі доступу для команди'],
   },
   business: {
     id: 'business',
@@ -35,7 +35,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceUsd: 499,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_BUSINESS',
-    features: ['Без ліміту анкорів', 'SLA 99,9 %', 'Аудит-лог'],
+    features: ['Гарантія доступності 99,9 %', 'Журнал дій для аудиту'],
   },
   search: {
     id: 'search',
@@ -43,7 +43,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceUsd: 999,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_SEARCH',
-    features: ['Усе з Business', 'Квитанції повноти пошуку', 'Звіти для аудиту'],
+    features: ['Усе з Business', 'Підтвердження повноти пошуку', 'Звіти для аудиторів'],
   },
 };
 

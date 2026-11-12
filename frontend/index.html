@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AnchorProof</title>
+    <script>
+      // Apply the saved/OS theme before React mounts, so a dark page never flashes white.
+      try {
+        var saved = JSON.parse(localStorage.getItem("ap-color-scheme"));
+        var dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        if (dark) document.documentElement.style.background = "#1a1b1e";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

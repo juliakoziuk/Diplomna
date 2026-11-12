@@ -11,7 +11,7 @@ const METHOD_ROWS = [
 ]
 const LABEL: Record<Method, string> = { V0: "Включення", A: "A", B: "B", C: "C" }
 const ATTACK_NAME: Record<string, string> = { hide: "Приховати найкращий", centroid: "Підмінити кластери", tamper: "Підробити вектор", rollback: "Rollback" }
-const BAR_COLOR: Record<Method, string> = { V0: "#adb5bd", A: "#d9480f", B: "#d9480f", C: "#3c4e8a" }
+const BAR_COLOR: Record<Method, string> = { V0: "var(--ap-bar-muted)", A: "var(--ap-accent)", B: "var(--ap-accent)", C: "var(--ap-bar-chain)" }
 
 export default function MethodsSection({ k, nprobe }: { k: number; nprobe: number }) {
   const [data, setData] = useState<ReturnType<typeof bench> | null>(null)
@@ -31,7 +31,7 @@ export default function MethodsSection({ k, nprobe }: { k: number; nprobe: numbe
             <thead><tr><th>Метод</th><th>Ідея</th><th>Сильна сторона</th><th>Обмеження</th><th>Статус</th></tr></thead>
             <tbody>
               {METHOD_ROWS.map((r) => (
-                <tr key={r.name} style={r.rec ? { background: "#fff4e6" } : undefined}>
+                <tr key={r.name} style={r.rec ? { background: "var(--ap-rec-row)" } : undefined}>
                   <td><Text fz="sm" fw={600}>{r.name}</Text></td>
                   <td><Text fz="sm">{r.idea}</Text></td>
                   <td><Text fz="sm">{r.plus}</Text></td>
