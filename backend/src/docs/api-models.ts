@@ -95,8 +95,11 @@ export class DocumentReceiptDto {
   @ApiProperty({ description: 'Transaction that anchored the batch root.' })
   txHash: string;
 
-  @ApiProperty({ example: 'mock', description: '"mock" until the contract is deployed, then the real network.' })
+  @ApiProperty({ example: 'polygon-amoy', description: 'Registry that holds the batch root: "mock" (demo) or a chain such as "polygon-amoy".' })
   network: string;
+
+  @ApiPropertyOptional({ description: 'MerkleAnchor contract address (on-chain receipts). Must equal GET /v1/chain.contract.' })
+  contract?: string;
 }
 
 export class AnchorItemDto {
@@ -139,6 +142,23 @@ export class AnchorRootDto {
 
   @ApiProperty({ description: 'Anchoring transaction hash.' })
   txHash: string;
+}
+
+export class ChainInfoDto {
+  @ApiProperty({ description: 'True when roots are written to a public blockchain.' })
+  enabled: boolean;
+
+  @ApiProperty({ example: 'polygon-amoy', description: '"mock" when the demo registry is used.' })
+  network: string;
+
+  @ApiProperty({ nullable: true, type: Number, example: 80002 })
+  chainId: number | null;
+
+  @ApiProperty({ nullable: true, type: String, description: 'The official MerkleAnchor contract.' })
+  contract: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: 'https://amoy.polygonscan.com', description: 'Block explorer base URL.' })
+  explorer: string | null;
 }
 
 export class CloseEpochResponse {

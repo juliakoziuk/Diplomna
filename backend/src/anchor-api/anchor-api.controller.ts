@@ -10,6 +10,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -27,6 +28,7 @@ import {
   ApiParam,
   ApiProperty,
   ApiPropertyOptional,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -40,6 +42,7 @@ import {
   AnchorRootDto,
   ApiKeyCreatedDto,
   ApiKeyDto,
+  ChainInfoDto,
   CloseEpochResponse,
   ErrorResponse,
 } from '../docs/api-models';
@@ -125,6 +128,7 @@ export class PublicRootsController {
   constructor(private readonly service: AnchorApiService) {}
 
   @Get(':epoch')
+  @ApiQuery({ name: 'network', required: false, description: 'Registry the epoch lives in, as written in the receipt ("mock", "polygon-amoy", …). Defaults to the active one.' })
   @ApiOperation({
     summary: 'Anchored root of an epoch',
     description: 'No authentication. Compare `root` with `receipt.batchRoot` to check a receipt independently.',
@@ -132,8 +136,26 @@ export class PublicRootsController {
   @ApiParam({ name: 'epoch', type: Number, example: 3 })
   @ApiOkResponse({ type: AnchorRootDto })
   @ApiNotFoundResponse({ description: 'Unknown epoch.', type: ErrorResponse })
-  root(@Param('epoch', ParseIntPipe) epoch: number) {
-    return this.service.epochRoot(epoch);
+  root(@Param('epoch', ParseIntPipe) epoch: number, @Query('network') network?: string) {
+    return this.service.epochRoot(epoch, network);
+  }
+}
+
+/** Public: which registry receipts are written to, so verifiers can recognise the official contract. */
+@ApiTags('Public roots')
+@Controller('v1/chain')
+export class PublicChainController {
+  constructor(private readonly service: AnchorApiService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Active anchoring registry',
+    description:
+      'Tells whether roots are written to a public blockchain and which contract is the official one. A receipt whose `contract` differs from this one is not ours.',
+  })
+  @ApiOkResponse({ type: ChainInfoDto })
+  chain() {
+    return this.service.chainInfo();
   }
 }
 

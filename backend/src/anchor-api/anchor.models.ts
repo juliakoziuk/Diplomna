@@ -68,6 +68,14 @@ export class AnchorRecord extends Model {
   @Column({ type: DataType.STRING(66), allowNull: true })
   txHash: string | null;
 
+  /** Registry that holds the batch root: "mock" (demo) or a chain such as "polygon-amoy". */
+  @Column({ type: DataType.STRING(32), allowNull: false, defaultValue: 'mock' })
+  network: string;
+
+  /** MerkleAnchor contract address for on-chain records, null for the mock registry. */
+  @Column({ type: DataType.STRING(42), allowNull: true })
+  contract: string | null;
+
   @Column({ type: DataType.DATE, allowNull: true })
   anchoredAt: Date | null;
 }

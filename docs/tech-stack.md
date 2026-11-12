@@ -39,8 +39,9 @@ backend/
       query.controller.ts   # POST /search -> results + proofBundle (REST)
       query.service.ts
       query.dto.ts           # DTO для class-validator
-contracts/                  # ОКРЕМИЙ пакет: Hardhat-проєкт
-  MerkleAnchor.sol
+contracts/                  # ОКРЕМИЙ пакет: Hardhat-проєкт (див. docs/blockchain.md)
+  contracts/MerkleAnchor.sol
+  test/  scripts/            # тести, деплой, генерація службового гаманця
   hardhat.config.ts
   package.json               # своя версія TS/hardhat
 verification-sdk/           # ОКРЕМИЙ npm-пакет: клієнтська верифікація

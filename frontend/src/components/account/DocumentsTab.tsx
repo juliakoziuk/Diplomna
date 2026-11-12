@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react"
 import { Alert, Badge, Button, Card, Code, Group, Loader, ScrollArea, Stack, Table, Text } from "@mantine/core"
 import { Dropzone } from "@mantine/dropzone"
 import { IconAlertCircle, IconFileUpload, IconReceipt, IconShieldCheck } from "@tabler/icons-react"
-import { hashLeaf, verifyInclusionProof } from "verification-sdk"
 import { AnchorItem, accountApi, formatDateTime } from "../../api/account"
-import { tr, useI18n } from "../../i18n"
+import { useI18n } from "../../i18n"
+import { checkReceipt } from "../../receipts/check"
 import ReceiptModal from "./ReceiptModal"
 
 async function sha256Hex(file: File): Promise<string> {
@@ -14,25 +14,10 @@ async function sha256Hex(file: File): Promise<string> {
 
 type Check = { ok: boolean; text: string }
 
-/** Independent check in the browser: Merkle proof here, root read back from the anchor registry. */
+/** Independent check in the browser: the shared receipt check without a file. */
 async function verifyReceipt(item: AnchorItem): Promise<Check[]> {
-  const r = item.receipt!
-  const leafOk = hashLeaf(r.sha256).toLowerCase() === r.leaf.toLowerCase()
-  const proofOk = leafOk && verifyInclusionProof(r.leaf, r.siblings, r.batchRoot)
-  const checks: Check[] = [
-    { ok: proofOk, text: proofOk ? tr(`The document is part of epoch ${r.epoch} batch (${r.siblings.length} proof hashes)`, `Документ входить у батч епохи ${r.epoch} (${r.siblings.length} хешів доказу)`) : tr("The Merkle proof does not lead to the batch root", "Доказ Меркла не сходиться до кореня батчу") },
-  ]
-  try {
-    const anchor = await accountApi.chainRoot(r.epoch)
-    const same = anchor.root.toLowerCase() === r.batchRoot.toLowerCase()
-    checks.push({ ok: same, text: same ? tr(`The root matches the anchor of version ${r.epoch}`, `Корінь збігається з анкором версії ${r.epoch}`) : tr("The registry holds a different root: the receipt is forged", "Корінь у реєстрі інший, квитанцію підроблено") })
-  } catch {
-    checks.push({
-      ok: false,
-      text: tr("No record for this epoch is available in the registry.", "Запис цієї епохи недоступний у реєстрі."),
-    })
-  }
-  return checks
+  const verdict = await checkReceipt(item.receipt!, null)
+  return verdict.lines.filter((l) => l.status !== "skip").map((l) => ({ ok: l.status === "ok", text: l.title }))
 }
 
 export default function DocumentsTab({ onUsageChange }: { onUsageChange: () => void }) {

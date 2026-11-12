@@ -1,0 +1,25 @@
+{
+  "name": "anchorproof-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MerkleAnchor.sol: the on-chain registry of anchored Merkle roots, with tests and deploy scripts",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "wallet:new": "hardhat run scripts/new-wallet.ts",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:amoy": "hardhat run scripts/deploy.ts --network amoy",
+    "deploy:polygon": "hardhat run scripts/deploy.ts --network polygon"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@types/node": "^20.11.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0",
+    "solc": "^0.8.24",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "viem": "^2.21.0"
+  }
+}

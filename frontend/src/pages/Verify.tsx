@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import {
-  Alert, Badge, Box, Button, Card, Code, Group, Loader, Stack, Text, Textarea, ThemeIcon, Title,
+  Alert, Anchor, Badge, Box, Button, Card, Code, Group, Loader, Stack, Text, Textarea, ThemeIcon, Title,
 } from "@mantine/core"
 import { Dropzone } from "@mantine/dropzone"
 import { IconAlertCircle, IconCheck, IconFileText, IconMinus, IconShieldCheck, IconShieldX, IconUpload, IconX } from "@tabler/icons-react"
 import AccountShell from "../layouts/AccountShell"
 import { CheckLine, Verdict, checkReceipt, parseReceipt, sha256Hex } from "../receipts/check"
+import { networkLabel } from "../receipts/chains"
 import { useI18n } from "../i18n"
 
 const TONE = {
@@ -154,6 +155,11 @@ export default function Verify() {
                 ))}
               </Stack>
 
+              {verdict.testnet && (
+                <Alert color="blue" variant="light" icon={<IconAlertCircle size="1rem" />}>
+                  {t("This receipt is anchored in a public test network: anyone can check the record, but a test network is not permanent and carries no legal weight.", "Ця квитанція зафіксована в публічній тестовій мережі: запис може перевірити будь-хто, але тестова мережа не вічна і не має юридичної ваги.")}
+                </Alert>
+              )}
               {verdict.demoRegistry && (
                 <Alert color="orange" variant="light" icon={<IconAlertCircle size="1rem" />}>
                   {lang === "uk" ? <>Це квитанція з <b>демонстраційного реєстру</b>: запис імітується на сервері й поки не в публічному блокчейні.</> : <>This receipt comes from a <b>demo registry</b>: the record is simulated on the server and is not yet on a public blockchain.</>}
@@ -161,8 +167,11 @@ export default function Verify() {
               )}
 
               <Group spacing="xs">
-                <Badge variant="light">{t("Batch", "Партія")} {verdict.epoch}</Badge>
-                {verdict.txHash && <Code>{verdict.txHash.slice(0, 18)}…</Code>}
+                <Badge variant="light">{networkLabel(verdict.network)}</Badge>
+                <Badge variant="light" color="gray">{t("Batch", "Партія")} {verdict.epoch}</Badge>
+                {verdict.explorerTx
+                  ? <Anchor href={verdict.explorerTx} target="_blank" fz="sm">{t("View the transaction on the blockchain", "Переглянути транзакцію в блокчейні")}</Anchor>
+                  : verdict.txHash && <Code>{verdict.txHash.slice(0, 18)}…</Code>}
               </Group>
             </Stack>
           </Card>

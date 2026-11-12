@@ -17,9 +17,9 @@ async function checkDocument(r: DocumentReceipt): Promise<Outcome> {
   const proofOk = leafOk && verifyInclusionProof(r.leaf, r.siblings, r.batchRoot)
   steps.push({ label: tr("The document is part of the epoch batch", "Документ входить у батч епохи"), status: proofOk ? "ok" : "fail", detail: tr(`epoch ${r.epoch}, ${r.siblings.length} proof hashes`, `епоха ${r.epoch}, ${r.siblings.length} хешів доказу`) })
   try {
-    const anchor = await accountApi.chainRoot(r.epoch)
+    const anchor = await accountApi.chainRoot(r.epoch, r.network)
     const same = anchor.root.toLowerCase() === r.batchRoot.toLowerCase()
-    steps.push({ label: tr("The root matches the anchor", "Корінь збігається з анкором"), status: same ? "ok" : "fail", detail: tr(`version ${r.epoch}, tx ${anchor.txHash.slice(0, 12)}…`, `версія ${r.epoch}, tx ${anchor.txHash.slice(0, 12)}…`) })
+    steps.push({ label: tr("The root matches the anchor", "Корінь збігається з анкором"), status: same ? "ok" : "fail", detail: tr(`version ${r.epoch}, tx ${(anchor.txHash ?? r.txHash).slice(0, 12)}…`, `версія ${r.epoch}, tx ${(anchor.txHash ?? r.txHash).slice(0, 12)}…`) })
   } catch {
     steps.push({
       label: tr("The root matches the anchor", "Корінь збігається з анкором"),

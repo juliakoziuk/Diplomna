@@ -44,7 +44,10 @@ export interface DocumentReceipt {
   leafIndex: number
   siblings: string[]
   txHash: string
+  /** Registry holding the batch root: "mock" (demo) or a chain such as "polygon-amoy". */
   network: string
+  /** MerkleAnchor contract (on-chain receipts). */
+  contract?: string
 }
 
 export interface AnchorItem {
@@ -86,8 +89,23 @@ export const accountApi = {
   keys: () => api<ApiKeyItem[]>("/account/api-keys"),
   createKey: (name: string) => post<ApiKeyItem>("/account/api-keys", { name }),
   revokeKey: (id: number) => api<ApiKeyItem>(`/account/api-keys/${id}`, { method: "DELETE" }),
-  chainRoot: (version: number) =>
-    api<{ version: number; root: string; timestamp: number; txHash: string }>(`/v1/roots/${version}`),
+  chainRoot: (version: number, network?: string) =>
+    api<{ version: number; root: string; timestamp: number; txHash: string | null }>(
+      `/v1/roots/${version}${network ? `?network=${encodeURIComponent(network)}` : ""}`,
+    ),
+}
+
+export interface ChainInfo {
+  enabled: boolean
+  network: string
+  chainId: number | null
+  contract: string | null
+  explorer: string | null
+}
+
+export const chainApi = {
+  /** The registry new receipts are written to, and the official contract address. */
+  info: () => api<ChainInfo>("/v1/chain"),
 }
 
 export const formatDate = (iso: string | null | undefined) =>

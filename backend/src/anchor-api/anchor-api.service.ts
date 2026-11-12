@@ -12,6 +12,7 @@ import { createHash, randomBytes } from 'crypto';
 import { BillingService } from 'src/billing/billing.service';
 import { PLANS } from 'src/billing/plans';
 import { AnchoringService } from 'src/verifiable-search/anchoring/anchoring.service';
+import { ChainAnchorService } from 'src/chain/chain-anchor.service';
 import { buildMerkleTree, getInclusionProof, hashLeaf } from 'src/verifiable-search/merkle/merkle-tree';
 import { AnchorEpoch, AnchorRecord, ApiKey } from './anchor.models';
 import { msg } from 'src/common/lang';
@@ -37,6 +38,7 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
     @InjectModel(AnchorEpoch) private readonly epochs: typeof AnchorEpoch,
     private readonly billing: BillingService,
     private readonly anchoring: AnchoringService,
+    private readonly chain: ChainAnchorService,
     private readonly config: ConfigService,
   ) {}
 
@@ -119,16 +121,36 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
         leafIndex: r.leafIndex,
         siblings: r.siblings,
         txHash: r.txHash,
-        network: 'mock', // becomes polygon-amoy once MerkleAnchor.sol is deployed
+        network: r.network || 'mock',
+        // The contract the root lives in: verifiers check it against GET /v1/chain.
+        ...(r.contract ? { contract: r.contract } : {}),
       },
     };
   }
 
-  /** Public: the anchored root of a document epoch, for independent receipt checks. */
-  epochRoot(epoch: number) {
-    const anchor = this.anchoring.getRoot(epoch, 'documents');
-    if (!anchor) throw new NotFoundException(msg('Epoch not found', 'Епоху не знайдено'));
-    return anchor;
+  /**
+   * Public: the anchored root of a document epoch, for independent receipt checks.
+   * `network` picks the registry ("mock" or the configured chain); it defaults to the active one.
+   */
+  async epochRoot(epoch: number, network?: string) {
+    const target = network || (this.chain.enabled ? this.chain.network : 'mock');
+    if (target === 'mock') {
+      const anchor = this.anchoring.getRoot(epoch, 'documents');
+      if (!anchor) throw new NotFoundException(msg('Epoch not found', 'Епоху не знайдено'));
+      return anchor;
+    }
+    if (!this.chain.enabled || target !== this.chain.network) {
+      throw new NotFoundException(msg('Unknown network', 'Невідома мережа'));
+    }
+    const onChain = await this.chain.getRoot(epoch);
+    if (!onChain) throw new NotFoundException(msg('Epoch not found', 'Епоху не знайдено'));
+    const record = await this.records.findOne({ where: { epoch, network: target }, attributes: ['txHash'] });
+    return { ...onChain, txHash: record?.txHash ?? null };
+  }
+
+  /** Public description of the registry new receipts are written to. */
+  chainInfo() {
+    return this.chain.info();
   }
 
   /** Batches every pending record into one Merkle tree and anchors its root. */
@@ -143,13 +165,28 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
       });
       if (pending.length === 0) return { anchored: 0 };
       const tree = buildMerkleTree(pending.map((r) => hashLeaf(r.sha256)));
-      const anchor = this.anchoring.anchorRoot(tree.root, 'documents');
-      const anchoredAt = new Date(anchor.timestamp);
+
+      // On-chain when configured, otherwise the in-memory demo registry. A failed transaction
+      // leaves the records pending, so the next epoch simply tries again.
+      const onChain = this.chain.enabled;
+      let anchor: { version: number; root: string; timestamp: number; txHash: string };
+      try {
+        anchor = onChain ? await this.chain.anchorRoot(tree.root) : this.anchoring.anchorRoot(tree.root, 'documents');
+      } catch (err) {
+        this.logger.error(`anchoring ${pending.length} records failed: ${(err as Error).message}`);
+        throw err;
+      }
+      // The demo registry reports milliseconds, a chain (block.timestamp) seconds.
+      const anchoredAt = new Date(anchor.timestamp < 1e12 ? anchor.timestamp * 1000 : anchor.timestamp);
+      const network = onChain ? this.chain.network : 'mock';
       await this.records.sequelize.transaction(async (transaction) => {
-        await this.epochs.create(
-          { version: anchor.version, root: anchor.root, txHash: anchor.txHash, timestamp: String(anchor.timestamp) },
-          { transaction },
-        );
+        // Only the demo registry needs its own copy; a chain is the source of truth.
+        if (!onChain) {
+          await this.epochs.create(
+            { version: anchor.version, root: anchor.root, txHash: anchor.txHash, timestamp: String(anchor.timestamp) },
+            { transaction },
+          );
+        }
         for (let i = 0; i < pending.length; i++) {
           const { siblings } = getInclusionProof(tree.layers, i);
           await pending[i].update(
@@ -160,13 +197,15 @@ export class AnchorApiService implements OnModuleInit, OnModuleDestroy {
               leafIndex: i,
               siblings,
               txHash: anchor.txHash,
+              network,
+              contract: onChain ? this.chain.contract : null,
               anchoredAt,
             },
             { transaction },
           );
         }
       });
-      this.logger.log(`epoch ${anchor.version}: anchored ${pending.length} records`);
+      this.logger.log(`epoch ${anchor.version} (${network}): anchored ${pending.length} records, tx ${anchor.txHash}`);
       return { anchored: pending.length, epoch: anchor.version };
     } finally {
       this.closing = false;

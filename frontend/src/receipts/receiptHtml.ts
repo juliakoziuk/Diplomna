@@ -1,6 +1,7 @@
 import { AnchorItem } from "../api/account"
 import { getLang, tr } from "../i18n"
 import { formatLong } from "./check"
+import { chainByName, networkLabel, txUrl } from "./chains"
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ENTITIES[c])
@@ -15,6 +16,9 @@ export function receiptHtml(item: AnchorItem, verifyUrl: string): string {
   const r = item.receipt!
   const when = formatLong(new Date(item.anchoredAt ?? item.createdAt))
   const demo = r.network === "mock"
+  const chain = chainByName(r.network)
+  const testnet = !demo && (chain?.testnet ?? false)
+  const explorerTx = demo ? null : txUrl(chain, r.txHash)
   const row = (k: string, v: string, mono = false) =>
     `<tr><th>${esc(k)}</th><td${mono ? ' class="mono"' : ""}>${esc(v)}</td></tr>`
   const title = tr("Document recording receipt", "Квитанція про фіксацію документа")
@@ -48,13 +52,19 @@ export function receiptHtml(item: AnchorItem, verifyUrl: string): string {
     ${row(tr("Receipt number", "Номер квитанції"), item.id, true)}
     ${row(tr("File fingerprint (SHA-256)", "Цифровий відбиток файлу (SHA-256)"), r.sha256, true)}
     ${row(tr("Batch (epoch)", "Партія (епоха)"), String(r.epoch))}
-    ${row(tr("Registry", "Реєстр"), demo ? tr("Demo registry", "Демонстраційний реєстр") : r.network)}
+    ${row(tr("Registry", "Реєстр"), networkLabel(r.network))}
+    ${r.contract ? row(tr("Contract", "Контракт"), r.contract, true) : ""}
     ${row(tr("Transaction number", "Номер транзакції"), r.txHash, true)}
+    ${explorerTx ? `<tr><th>${esc(tr("View on the blockchain", "Переглянути в блокчейні"))}</th><td class="mono"><a href="${esc(explorerTx)}">${esc(explorerTx)}</a></td></tr>` : ""}
   </table>
   <p>${esc(tr(
     "The fingerprint is calculated from the file's contents. Changing even one character in the document gives a different fingerprint, so matching fingerprints prove the file was not changed.",
     "Цифровий відбиток обчислюється з вмісту файлу. Зміна навіть одного символу в документі дає інший відбиток, тому збіг відбитків доводить, що файл не змінювали.",
   ))}</p>
+  ${testnet ? `<div class="demo"><b>${esc(tr("Public test network.", "Публічна тестова мережа."))}</b> ${esc(tr(
+    "The record is on a public blockchain that anyone can check, but a test network is not permanent and carries no legal weight.",
+    "Запис лежить у публічному блокчейні, який може перевірити будь-хто, але тестова мережа не вічна і не має юридичної ваги.",
+  ))}</div>` : ""}
   ${demo ? `<div class="demo"><b>${esc(tr("Demo version.", "Демонстраційна версія."))}</b> ${esc(tr(
     "The registry is simulated on the server and is not a public blockchain. Such a receipt is fine for checking how the service works, but not as evidence in a case.",
     "Реєстр імітується на сервері й не є публічним блокчейном. Така квитанція придатна для перевірки роботи сервісу, але не як доказ у справі.",

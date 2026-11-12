@@ -39,6 +39,7 @@
     "class-validator": "^0.14.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.6.1",
+    "ethers": "^6.17.0",
     "js-sha3": "^0.9.3",
     "ml-kmeans": "^6.0.0",
     "pg": "^8.23.0",
