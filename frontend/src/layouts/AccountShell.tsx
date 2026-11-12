@@ -69,7 +69,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
   const { classes } = useStyles()
   const navigate = useNavigate()
   const user = useUserStore((s) => s)
-  const toggleLogin = useGeneralStore((s) => s.toggleLoginModal)
+  const openAuth = useGeneralStore((s) => s.openAuth)
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const dark = colorScheme === "dark"
 
@@ -110,7 +110,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
                   <Button variant="subtle" color="gray" size="xs" onClick={handleLogout}>Вийти</Button>
                 </>
               ) : (
-                <Button size="xs" onClick={toggleLogin}>Увійти</Button>
+                <Button size="xs" onClick={() => openAuth("login")}>Увійти</Button>
               )}
             </Group>
           </Group>

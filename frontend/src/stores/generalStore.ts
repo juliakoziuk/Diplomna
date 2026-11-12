@@ -1,13 +1,21 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+export type AuthMode = "login" | "register"
+
 interface GeneralState {
   isProfileSettingsModalOpen: boolean
   isLoginModalOpen: boolean
   isCreateRoomModalOpen: boolean
+  /** Which tab of the sign-in modal is shown. */
+  authMode: AuthMode
   toggleProfileSettingsModal: () => void
   toggleLoginModal: () => void
   toggleCreateRoomModal: () => void
+  setAuthMode: (mode: AuthMode) => void
+  /** Opens the sign-in modal on the given tab. */
+  openAuth: (mode: AuthMode) => void
+  closeAuth: () => void
 }
 
 export const useGeneralStore = create<GeneralState>()(
@@ -16,6 +24,7 @@ export const useGeneralStore = create<GeneralState>()(
       isProfileSettingsModalOpen: false,
       isLoginModalOpen: false,
       isCreateRoomModalOpen: false,
+      authMode: "login",
 
       toggleProfileSettingsModal: () =>
         set((state) => ({
@@ -29,6 +38,9 @@ export const useGeneralStore = create<GeneralState>()(
         set((state) => ({
           isCreateRoomModalOpen: !state.isCreateRoomModalOpen,
         })),
+      setAuthMode: (mode) => set({ authMode: mode }),
+      openAuth: (mode) => set({ authMode: mode, isLoginModalOpen: true }),
+      closeAuth: () => set({ isLoginModalOpen: false }),
     }),
     {
       name: "general-store",

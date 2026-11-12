@@ -80,12 +80,12 @@ function Section({ id, eyebrow, title, lede, children }: { id: string; eyebrow: 
 export default function Product() {
   const navigate = useNavigate()
   const userId = useUserStore((s) => s.id)
-  const toggleLogin = useGeneralStore((s) => s.toggleLoginModal)
+  const openAuth = useGeneralStore((s) => s.openAuth)
   const [plans, setPlans] = useState<Plan[] | null>(null)
 
   useEffect(() => { billingApi.plans().then(setPlans).catch(() => setPlans([])) }, [])
 
-  const start = () => (userId ? navigate("/account") : toggleLogin())
+  const start = () => (userId ? navigate("/account") : openAuth("register"))
 
   return (
     <AccountShell>
