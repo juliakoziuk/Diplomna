@@ -3,10 +3,8 @@ import { QueryService } from './query.service';
 import { VerifiableSearchDto } from './query.dto';
 
 /**
- * REST, not a GraphQL resolver — see docs/tech-stack.md: this module is
- * meant to be exposed the same way AnchorProof's public API is (POST
- * /anchor, GET /verify/:id), so it deliberately does not follow the
- * GraphQL-resolver convention used by the rest of backend/ (chatroom, etc.).
+ * REST controller — see docs/tech-stack.md: this module is exposed the same
+ * way AnchorProof's public API is (POST /anchor, GET /verify/:id).
  */
 @Controller('verifiable-search')
 export class QueryController {

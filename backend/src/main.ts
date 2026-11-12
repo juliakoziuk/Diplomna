@@ -5,7 +5,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 
-import * as graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
@@ -20,12 +19,10 @@ async function bootstrap() {
       'Authorization',
       'Content-Type',
       'X-Requested-With',
-      'apollo-require-preflight',
     ],
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
   });
   app.use(cookieParser());
-  app.use(graphqlUploadExpress({ maxFileSize: 10000000000, maxFiles: 1 }));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

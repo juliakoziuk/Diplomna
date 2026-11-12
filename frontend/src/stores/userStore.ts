@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { User } from "../gql/graphql"
+import type { AuthUser } from "../api/auth"
 
 interface UserState {
   id: number | undefined
@@ -9,7 +9,7 @@ interface UserState {
   email?: string
   updateProfileImage: (image: string) => void
   updateUsername: (name: string) => void
-  setUser: (user: User) => void
+  setUser: (user: AuthUser) => void
 }
 
 export const useUserStore = create<UserState>()(

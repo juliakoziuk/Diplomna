@@ -12,11 +12,14 @@ import React, { useState } from "react"
 import { useGeneralStore } from "../stores/generalStore"
 import { useForm } from "@mantine/form"
 import { useUserStore } from "../stores/userStore"
-import { GraphQLErrorExtensions } from "graphql"
-import { useMutation } from "@apollo/client"
-import { LoginUserMutation, RegisterUserMutation } from "../gql/graphql"
-import { REGISTER_USER } from "../graphql/mutations/Register"
-import { LOGIN_USER } from "../graphql/mutations/Login"
+import { ApiError } from "../api/http"
+import { authApi } from "../api/auth"
+
+type FieldErrors = Record<string, string>
+
+/** Field errors from a 400 body like { email: "Email already in use" }. */
+const fieldErrors = (err: unknown): FieldErrors =>
+  err instanceof ApiError && err.status === 400 && err.body && typeof err.body === "object" ? err.body : {}
 function AuthOverlay() {
   const isLoginModalOpen = useGeneralStore((state) => state.isLoginModalOpen)
   const toggleLoginModal = useGeneralStore((state) => state.toggleLoginModal)
@@ -53,36 +56,21 @@ function AuthOverlay() {
     const setUser = useUserStore((state) => state.setUser)
     const setIsLoginOpen = useGeneralStore((state) => state.toggleLoginModal)
 
-    const [errors, setErrors] = React.useState<GraphQLErrorExtensions>({})
-
-    const [registerUser, { loading }] =
-      useMutation<RegisterUserMutation>(REGISTER_USER)
+    const [errors, setErrors] = React.useState<FieldErrors>({})
+    const [loading, setLoading] = React.useState(false)
 
     const handleRegister = async () => {
       setErrors({})
-
-      await registerUser({
-        variables: {
-          email: form.values.email,
-          password: form.values.password,
-          fullname: form.values.fullname,
-          confirmPassword: form.values.confirmPassword,
-        },
-        onCompleted: (data) => {
-          setErrors({})
-          if (data?.register.user)
-            setUser({
-              id: data?.register.user.id,
-              email: data?.register.user.email,
-              fullname: data?.register.user.fullname,
-            })
-          setIsLoginOpen()
-        },
-      }).catch((err) => {
-        console.log(err.graphQLErrors, "ERROR")
-        setErrors(err.graphQLErrors[0].extensions)
-        useGeneralStore.setState({ isLoginModalOpen: true })
-      })
+      setLoading(true)
+      try {
+        const { user } = await authApi.register(form.values)
+        setUser(user)
+        setIsLoginOpen()
+      } catch (err) {
+        setErrors(fieldErrors(err))
+      } finally {
+        setLoading(false)
+      }
     }
 
     return (
@@ -165,11 +153,10 @@ function AuthOverlay() {
   }
 
   const Login = () => {
-    const [loginUser, { loading, error, data }] =
-      useMutation<LoginUserMutation>(LOGIN_USER)
+    const [loading, setLoading] = React.useState(false)
     const setUser = useUserStore((state) => state.setUser)
     const setIsLoginOpen = useGeneralStore((state) => state.toggleLoginModal)
-    const [errors, setErrors] = React.useState<GraphQLErrorExtensions>({})
+    const [errors, setErrors] = React.useState<FieldErrors>({})
     const [invalidCredentials, setInvalidCredentials] = React.useState("")
     const form = useForm({
       initialValues: {
@@ -187,31 +174,20 @@ function AuthOverlay() {
     })
 
     const handleLogin = async () => {
-      await loginUser({
-        variables: {
-          email: form.values.email,
-          password: form.values.password,
-        },
-        onCompleted: (data) => {
-          setErrors({})
-          if (data?.login.user) {
-            setUser({
-              id: data?.login.user.id,
-              email: data?.login.user.email,
-              fullname: data?.login.user.fullname,
-              avatarUrl: data?.login.user.avatarUrl,
-            })
-            setIsLoginOpen()
-          }
-        },
-      }).catch((err) => {
-        setErrors(err.graphQLErrors[0].extensions)
-        if (err.graphQLErrors[0].extensions?.invalidCredentials)
-          setInvalidCredentials(
-            err.graphQLErrors[0].extensions.invalidCredentials
-          )
-        useGeneralStore.setState({ isLoginModalOpen: true })
-      })
+      setErrors({})
+      setInvalidCredentials("")
+      setLoading(true)
+      try {
+        const { user } = await authApi.login(form.values)
+        setUser(user)
+        setIsLoginOpen()
+      } catch (err) {
+        const fields = fieldErrors(err)
+        setErrors(fields)
+        setInvalidCredentials(fields.invalidCredentials ?? "")
+      } finally {
+        setLoading(false)
+      }
     }
     return (
       <Paper>

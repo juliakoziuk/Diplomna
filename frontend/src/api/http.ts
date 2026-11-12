@@ -3,22 +3,16 @@ import { useUserStore } from "../stores/userStore"
 export const API_BASE = "http://localhost:3000"
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  /** `body` is the raw JSON error body, e.g. { email: "Email already in use" } for field errors. */
+  constructor(public status: number, message: string, public body?: any) {
     super(message)
   }
 }
 
 /** Access tokens live ~150 s, so a 401 usually just means "refresh first". */
 async function refreshSession(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/graphql`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: "mutation { refreshToken }" }),
-  })
-  if (!res.ok) return false
-  const body = await res.json()
-  return !body.errors && !!body.data?.refreshToken
+  const res = await fetch(`${API_BASE}/auth/refresh`, { method: "POST", credentials: "include" })
+  return res.ok
 }
 
 function messageOf(body: any, fallback: string): string {
@@ -48,7 +42,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
   }
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(res.status, messageOf(body, `Помилка ${res.status}`))
+  if (!res.ok) throw new ApiError(res.status, messageOf(body, `Помилка ${res.status}`), body)
   return body as T
 }
 

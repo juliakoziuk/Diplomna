@@ -1,6 +1,6 @@
 /**
  * Standalone demo entry point — boots ONLY VerifiableSearchModule, no
- * Postgres/Redis/GraphQL, so the real REST module can be demoed without
+ * Postgres, so the real REST module can be demoed without
  * the rest of backend/ (which needs docker-compose up). Once the full
  * app boots normally, this module is already wired into app.module.ts
  * and this file is no longer needed for that path.

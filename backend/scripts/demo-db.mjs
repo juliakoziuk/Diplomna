@@ -65,6 +65,8 @@ const stop = async () => {
 };
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
+// Windows has no real signals: scripts/dev-all.mjs asks for a clean stop over IPC instead.
+process.on('message', (msg) => msg === 'stop' && stop());
 
 main().catch(async (err) => {
   console.error(err);

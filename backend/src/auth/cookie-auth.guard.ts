@@ -10,9 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
 /**
- * REST counterpart of GraphqlAuthGuard: same httpOnly `access_token`
- * cookie, but read from the HTTP context. A 401 tells the frontend to call
- * the `refreshToken` mutation and retry.
+ * Guards REST routes with the httpOnly `access_token` cookie. A 401 tells the
+ * frontend to call POST /auth/refresh and retry.
  */
 @Injectable()
 export class CookieAuthGuard implements CanActivate {

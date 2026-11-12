@@ -1,11 +1,10 @@
 import React, { useEffect } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
-import { useMutation } from "@apollo/client"
 import { Box, Button, Container, Group, MantineProvider, Text, createStyles, rem } from "@mantine/core"
 import AuthOverlay from "../components/AuthOverlay"
 import { useUserStore } from "../stores/userStore"
 import { useGeneralStore } from "../stores/generalStore"
-import { LOGOUT_USER } from "../graphql/mutations/Logout"
+import { authApi } from "../api/auth"
 import "./account-shell.css"
 
 const useStyles = createStyles((theme) => ({
@@ -66,10 +65,9 @@ export default function AccountShell({ children }: { children: React.ReactNode }
   const navigate = useNavigate()
   const user = useUserStore((s) => s)
   const toggleLogin = useGeneralStore((s) => s.toggleLoginModal)
-  const [logout] = useMutation(LOGOUT_USER)
 
   const handleLogout = async () => {
-    await logout().catch(() => undefined)
+    await authApi.logout().catch(() => undefined)
     useUserStore.setState({ id: undefined, fullname: "", avatarUrl: null, email: "" })
     navigate("/pricing")
   }
@@ -91,7 +89,6 @@ export default function AccountShell({ children }: { children: React.ReactNode }
                 <NavLink to="/pricing" className={classes.link}>Тарифи</NavLink>
                 <NavLink to="/account" className={classes.link}>Кабінет</NavLink>
                 <NavLink to="/verifiable-search" className={classes.link}>Демо пошуку</NavLink>
-                <NavLink to="/" end className={classes.link}>Чати</NavLink>
               </Group>
             </Group>
             {user.id ? (

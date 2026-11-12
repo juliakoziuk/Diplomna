@@ -12,7 +12,7 @@ Stripe обрано для тестового середовища, бо тес�
 
 ```bash
 cd backend
-docker compose up -d        # Postgres :5433, Redis :6381
+docker compose up -d        # Postgres :5433
 npm run migrate             # таблиці Subscription, ApiKey, AnchorRecord, ProcessedWebhookEvent
 ```
 
