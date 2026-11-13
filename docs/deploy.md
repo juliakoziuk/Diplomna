@@ -34,7 +34,40 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 `NODE_ENV=production` образ ставить сам: у цьому режимі куки отримують прапорці `Secure` і `SameSite=Lax`,
 тому сайт має відкриватися по HTTPS (Render, Railway, Fly дають його автоматично).
 
-## Кроки (Render або Railway)
+## Безкоштовний деплой: Render + Neon (без картки)
+
+Бекенд і фронтенд: один безкоштовний Web Service на **Render**. База: безкоштовний Postgres на **Neon**
+(не береться Postgres від Render: безкоштовний там видаляється приблизно через 30 днів).
+Перед реєстрацією перевірте актуальні умови обох сервісів: якщо Render попросить картку,
+запасний варіант: Hugging Face Spaces (тип Docker, порт `7860`) із тією ж базою Neon.
+
+### 1. База на Neon
+
+1. Зареєструйтесь на neon.tech і створіть проєкт (регіон ближче до Render, наприклад Frankfurt).
+2. Скопіюйте **connection string** (`postgresql://…@…neon.tech/neondb?sslmode=require`).
+
+### 2. Сервіс на Render
+
+1. Запуште гілку `production` (у репозиторії є `render.yaml`, він бере код саме з неї).
+2. На render.com: **New → Blueprint**, підключіть GitHub-репозиторій, оберіть гілку `production`.
+3. Коли Render запитає `DATABASE_URL`, вставте рядок із Neon. Інші змінні (`DATABASE_SSL`,
+   нові `ACCESS_TOKEN_SECRET` і `REFRESH_TOKEN_SECRET`) уже описані в `render.yaml`.
+4. Дочекайтесь збірки (кілька хвилин) і перевірте `https://<сервіс>.onrender.com/health`.
+
+Оновлення: змінили код у `develop`, злили в `production`, і Render перебудує сервіс сам.
+
+### 3. Блокчейн-анкорування (необов'язково)
+
+Додайте вручну в **Environment** сервісу на Render: `ANCHOR_PRIVATE_KEY`, `ANCHOR_CHAIN_ID` (`80002` для
+Polygon Amoy), `ANCHOR_CONTRACT_DOCUMENTS`. Використовуйте гаманець для тестової мережі, ключ не комітьте.
+Поки сервіс спить, таймер анкорування не працює: накопичені хеші потраплять у ланцюжок після пробудження.
+
+### 4. Сон безкоштовного сервісу
+
+Після ~15 хвилин без запитів Render присипляє сервіс, перший запит потім триває 30–60 секунд.
+Перед демонстрацією відкрийте сайт заздалегідь.
+
+## Кроки (Render або Railway, платний Postgres)
 
 1. Створіть керований **PostgreSQL** і скопіюйте його `DATABASE_URL` (internal, якщо сервіс на тій самій платформі).
 2. Створіть **Web Service** з цього репозиторію, середовище Docker, `Dockerfile` у корені.

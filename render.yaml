@@ -1,0 +1,27 @@
+# Render Blueprint: one free Docker web service (backend + built frontend).
+# The database is NOT created here: use a free Neon Postgres (no card, no expiry),
+# see docs/deploy.md ("Безкоштовний деплой: Render + Neon").
+services:
+  - type: web
+    name: anchorproof
+    runtime: docker
+    plan: free
+    branch: production
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Neon connection string; Render asks for it when the Blueprint is created
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      # Fresh random secrets, generated once by Render
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      # No STRIPE_* variables: payments stay off, everyone is on the Free plan.
+      # On-chain anchoring (ANCHOR_PRIVATE_KEY, ANCHOR_CHAIN_ID, ANCHOR_CONTRACT_DOCUMENTS)
+      # is optional and is added by hand in the Render dashboard, never in this file.
