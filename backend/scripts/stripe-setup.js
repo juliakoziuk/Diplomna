@@ -1,7 +1,9 @@
 /**
  * One-off Stripe TEST-mode setup: creates the AnchorProof products, monthly
  * prices and a Customer Portal configuration, then writes their ids to
- * .env.local. Safe to re-run: prices are found again by lookup_key.
+ * .env.local. Safe to re-run: prices are found again by lookup_key, and a
+ * price whose amount no longer matches PLANS is replaced by a new one (Stripe
+ * prices are immutable), so re-running after a price change updates Stripe.
  *
  * Usage: put STRIPE_SECRET_KEY=sk_test_... into backend/.env.local, then
  *        npm run stripe:setup
@@ -12,9 +14,9 @@ const path = require('path');
 const Stripe = require('stripe');
 
 const PLANS = [
-  { env: 'STRIPE_PRICE_PRO', lookup: 'anchorproof_pro_monthly', name: 'AnchorProof Pro', usd: 49 },
-  { env: 'STRIPE_PRICE_BUSINESS', lookup: 'anchorproof_business_monthly', name: 'AnchorProof Business', usd: 499 },
-  { env: 'STRIPE_PRICE_SEARCH', lookup: 'anchorproof_search_monthly', name: 'AnchorProof Verifiable Search', usd: 999 },
+  { env: 'STRIPE_PRICE_PRO', lookup: 'anchorproof_pro_monthly', name: 'AnchorProof Pro', usd: 9 },
+  { env: 'STRIPE_PRICE_BUSINESS', lookup: 'anchorproof_business_monthly', name: 'AnchorProof Business', usd: 29 },
+  { env: 'STRIPE_PRICE_SEARCH', lookup: 'anchorproof_search_monthly', name: 'AnchorProof Verifiable Search', usd: 49 },
 ];
 
 async function main() {
@@ -29,17 +31,20 @@ async function main() {
 
   for (const plan of PLANS) {
     const existing = await stripe.prices.list({ lookup_keys: [plan.lookup], limit: 1 });
-    let price = existing.data[0];
-    if (!price) {
-      const product = await stripe.products.create({ name: plan.name });
+    const old = existing.data[0];
+    let price = old;
+    if (!old || old.unit_amount !== plan.usd * 100) {
+      const productId = old ? old.product : (await stripe.products.create({ name: plan.name })).id;
       price = await stripe.prices.create({
-        product: product.id,
+        product: productId,
         currency: 'usd',
         unit_amount: plan.usd * 100,
         recurring: { interval: 'month' },
         lookup_key: plan.lookup,
+        transfer_lookup_key: true,
       });
-      console.log(`created ${plan.name}: ${price.id}`);
+      if (old) await stripe.prices.update(old.id, { active: false });
+      console.log(`${old ? 'updated' : 'created'} ${plan.name}: ${price.id} ($${plan.usd}/mo)`);
     } else {
       console.log(`found   ${plan.name}: ${price.id}`);
     }

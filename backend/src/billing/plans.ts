@@ -24,7 +24,7 @@ export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    priceUsd: 49,
+    priceUsd: 9,
     anchorsPerMonth: 50_000,
     priceEnv: 'STRIPE_PRICE_PRO',
     features: ['Підключення через API', 'Квитанції в особистому кабінеті', 'Ключі доступу для команди'],
@@ -32,7 +32,7 @@ export const PLANS: Record<PlanId, Plan> = {
   business: {
     id: 'business',
     name: 'Business',
-    priceUsd: 499,
+    priceUsd: 29,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_BUSINESS',
     features: ['Гарантія доступності 99,9 %', 'Журнал дій для аудиту'],
@@ -40,7 +40,7 @@ export const PLANS: Record<PlanId, Plan> = {
   search: {
     id: 'search',
     name: 'Verifiable Search',
-    priceUsd: 999,
+    priceUsd: 49,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_SEARCH',
     features: ['Усе з Business', 'Підтвердження повноти пошуку', 'Звіти для аудиторів'],
