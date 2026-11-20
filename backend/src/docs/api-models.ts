@@ -206,8 +206,8 @@ export class PlanDto {
   @ApiProperty({ example: 'Pro' })
   name: string;
 
-  @ApiProperty({ example: 9 })
-  priceUsd: number;
+  @ApiProperty({ example: 400, description: 'Monthly price in UAH (hryvnias).' })
+  priceUah: number;
 
   @ApiProperty({ nullable: true, type: Number, example: 50000, description: 'Anchored documents per month; null = unlimited.' })
   anchorsPerMonth: number | null;
@@ -274,10 +274,10 @@ export class InvoiceDto {
   @ApiProperty({ format: 'date-time' })
   createdAt: string;
 
-  @ApiProperty({ example: 9, description: 'Amount in major currency units.' })
+  @ApiProperty({ example: 400, description: 'Amount in major currency units.' })
   amount: number;
 
-  @ApiProperty({ example: 'usd' })
+  @ApiProperty({ example: 'uah' })
   currency: string;
 
   @ApiProperty({ example: 'paid' })

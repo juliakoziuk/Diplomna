@@ -21,7 +21,7 @@ import { useGeneralStore } from "../stores/generalStore"
 import { BillingOverview, Plan, PlanId, billingApi } from "../api/account"
 import { SALES_EMAIL } from "../config"
 import { useI18n } from "../i18n"
-import { planFeatures, planLimit } from "../i18n/plans"
+import { planFeatures, planLimit, planPrice } from "../i18n/plans"
 
 export default function Pricing() {
   const navigate = useNavigate()
@@ -111,7 +111,7 @@ export default function Pricing() {
                     {isCurrent && <Badge color="green">{tt("Your plan", "Ваш тариф")}</Badge>}
                   </Group>
                   <Text fz={28} fw={600}>
-                    {plan.priceUsd === 0 ? "$0" : `$${plan.priceUsd}`}
+                    {planPrice(plan.priceUah, locale)}
                     <Text span fz="sm" c="dimmed" fw={400}> {tt("/ mo", "/ міс")}</Text>
                   </Text>
                   <Text fz="sm" c="dimmed">

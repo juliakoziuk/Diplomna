@@ -11,7 +11,7 @@ import { Plan, billingApi } from "../api/account"
 import { useUserStore } from "../stores/userStore"
 import { useGeneralStore } from "../stores/generalStore"
 import { useI18n } from "../i18n"
-import { planFeatures, planLimit } from "../i18n/plans"
+import { planFeatures, planLimit, planPrice } from "../i18n/plans"
 import "../product/product.css"
 
 /**
@@ -227,13 +227,13 @@ export default function Product() {
           {(plans ?? []).map((p) => (
             <Card key={p.id} withBorder padding="lg" sx={(th) => ({ display: "flex", flexDirection: "column", gap: th.spacing.xs, borderColor: p.id === "search" ? th.colors.orange[6] : undefined })}>
               <Group position="apart"><Text fw={600}>{p.name}</Text>{p.id === "search" && <Badge>{t("for search", "для пошуку")}</Badge>}</Group>
-              <Text fz={26} fw={600}>${p.priceUsd}<Text span fz="sm" c="dimmed" fw={400}> {t("/ mo", "/ міс")}</Text></Text>
+              <Text fz={26} fw={600}>{planPrice(p.priceUah, locale)}<Text span fz="sm" c="dimmed" fw={400}> {t("/ mo", "/ міс")}</Text></Text>
               <Text fz="sm" c="dimmed">{planLimit(p.anchorsPerMonth, locale)}</Text>
               <List spacing={3} size="sm" icon={<IconCheck size="0.9rem" />} sx={{ flex: 1 }}>
                 {planFeatures(p.id).map((f) => <List.Item key={f}>{f}</List.Item>)}
               </List>
               <Button variant={p.id === "search" ? "filled" : "light"} onClick={() => navigate("/pricing")}>
-                {p.priceUsd === 0 ? t("Start free", "Почати безкоштовно") : t("Choose", "Обрати")}
+                {p.priceUah === 0 ? t("Start free", "Почати безкоштовно") : t("Choose", "Обрати")}
               </Button>
             </Card>
           ))}

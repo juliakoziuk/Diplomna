@@ -30,6 +30,11 @@ export function planFeatures(id: PlanId): string[] {
   }
 }
 
+/** Monthly price in hryvnias: "1 200 грн" / "UAH 1,200". */
+export function planPrice(priceUah: number, locale: string): string {
+  return tr(`UAH ${priceUah.toLocaleString(locale)}`, `${priceUah.toLocaleString(locale)} грн`)
+}
+
 /** "100 documents per month" / "Unlimited documents". */
 export function planLimit(anchorsPerMonth: number | null, locale: string): string {
   return anchorsPerMonth === null

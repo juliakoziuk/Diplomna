@@ -3,7 +3,8 @@ export type PlanId = 'free' | 'pro' | 'business' | 'search';
 export interface Plan {
   id: PlanId;
   name: string;
-  priceUsd: number;
+  /** Monthly price in hryvnias (UAH). */
+  priceUah: number;
   /** Anchored documents per calendar month; null = unlimited. */
   anchorsPerMonth: number | null;
   /** Env var holding the provider's price id; null for the free plan. */
@@ -16,7 +17,7 @@ export const PLANS: Record<PlanId, Plan> = {
   free: {
     id: 'free',
     name: 'Free',
-    priceUsd: 0,
+    priceUah: 0,
     anchorsPerMonth: 100,
     priceEnv: null,
     features: ['Квитанція на кожен документ', 'Перевірка квитанцій безкоштовна', 'Без банківської картки'],
@@ -24,7 +25,7 @@ export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    priceUsd: 9,
+    priceUah: 400,
     anchorsPerMonth: 50_000,
     priceEnv: 'STRIPE_PRICE_PRO',
     features: ['Підключення через API', 'Квитанції в особистому кабінеті', 'Ключі доступу для команди'],
@@ -32,7 +33,7 @@ export const PLANS: Record<PlanId, Plan> = {
   business: {
     id: 'business',
     name: 'Business',
-    priceUsd: 29,
+    priceUah: 1200,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_BUSINESS',
     features: ['Гарантія доступності 99,9 %', 'Журнал дій для аудиту'],
@@ -40,7 +41,7 @@ export const PLANS: Record<PlanId, Plan> = {
   search: {
     id: 'search',
     name: 'Verifiable Search',
-    priceUsd: 49,
+    priceUah: 2000,
     anchorsPerMonth: null,
     priceEnv: 'STRIPE_PRICE_SEARCH',
     features: ['Усе з Business', 'Підтвердження повноти пошуку', 'Звіти для аудиторів'],

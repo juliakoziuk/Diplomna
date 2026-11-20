@@ -66,7 +66,7 @@ export class BillingController {
   constructor(private readonly billing: BillingService) {}
 
   @Get('plans')
-  @ApiOperation({ summary: 'List plans', description: 'Public. Prices in USD per month.' })
+  @ApiOperation({ summary: 'List plans', description: 'Public. Prices in UAH (hryvnias) per month.' })
   @ApiOkResponse({ type: [PlanDto] })
   plans() {
     return Object.values(PLANS).map(({ priceEnv, ...plan }) => plan);

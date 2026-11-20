@@ -6,7 +6,8 @@ export type PlanId = "free" | "pro" | "business" | "search"
 export interface Plan {
   id: PlanId
   name: string
-  priceUsd: number
+  /** Monthly price in hryvnias. */
+  priceUah: number
   anchorsPerMonth: number | null
   features: string[]
 }
